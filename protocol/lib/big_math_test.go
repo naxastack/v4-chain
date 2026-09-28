@@ -139,7 +139,7 @@ func TestBigMulPpm(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			result := lib.BigMulPpm(tc.val, tc.ppm, tc.roundUp)
-			require.Equal(t, tc.expectedResult, result)
+			require.Equal(t, 0, tc.expectedResult.Cmp(result))
 		})
 	}
 }
@@ -678,7 +678,7 @@ func TestBigDivCeil(t *testing.T) {
 			}
 			// Otherwise test the result
 			result := lib.BigDivCeil(tc.numerator, tc.denominator)
-			require.Equal(t, tc.expectedResult, result)
+			require.Equal(t, 0, tc.expectedResult.Cmp(result))
 		})
 	}
 }
@@ -1041,3 +1041,4 @@ func TestMustConvertBigIntToInt32(t *testing.T) {
 		})
 	}
 }
+
