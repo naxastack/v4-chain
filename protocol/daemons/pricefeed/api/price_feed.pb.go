@@ -340,6 +340,7 @@ func _PriceFeedService_UpdateMarketPrices_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+var PriceFeedService_serviceDesc = _PriceFeedService_serviceDesc
 var _PriceFeedService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "dydxprotocol.daemons.pricefeed.PriceFeedService",
 	HandlerType: (*PriceFeedServiceServer)(nil),

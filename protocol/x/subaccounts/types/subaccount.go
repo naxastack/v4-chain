@@ -100,12 +100,18 @@ func (m *Subaccount) SetUsdcAssetPosition(newUsdcPosition *big.Int) {
 	usdcAssetPosition := m.getUsdcAssetPosition()
 	if newUsdcPosition == nil || newUsdcPosition.Sign() == 0 {
 		if usdcAssetPosition != nil {
+			reserved := usdcAssetPosition.StatefulReservedQuantums.BigInt()
+			if reserved != nil && reserved.Sign() != 0 {
+				usdcAssetPosition.Quantums = dtypes.ZeroInt()
+				return
+			}
 			m.AssetPositions = m.AssetPositions[1:]
 		}
 	} else {
 		if usdcAssetPosition == nil {
 			usdcAssetPosition = &AssetPosition{
-				AssetId: assettypes.AssetUsdc.Id,
+				AssetId:                  assettypes.AssetUsdc.Id,
+				StatefulReservedQuantums: dtypes.ZeroInt(),
 			}
 			m.AssetPositions = append([]*AssetPosition{usdcAssetPosition}, m.AssetPositions...)
 		}

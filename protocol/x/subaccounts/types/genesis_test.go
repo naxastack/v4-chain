@@ -244,3 +244,38 @@ func TestGenesisState_Validate(t *testing.T) {
 		})
 	}
 }
+func TestGenesisStateValidateRejectsInvalidTypedIndexes(t *testing.T) {
+	owner := sample.AccAddress()
+	businessID := &types.SubaccountId{Owner: owner, Number: 1}
+
+	tests := map[string]struct {
+		state         *types.GenesisState
+		expectedError error
+	}{
+		"typed mapping references missing account": {
+			state:         &types.GenesisState{TypedSubaccounts: []types.TypedSubaccount{{Owner: owner, AccountType: types.AccountType_ACCOUNT_TYPE_SPOT, SubaccountId: businessID}}},
+			expectedError: types.ErrGenesisTypedAccountInvalid,
+		},
+		"typed mapping has mismatched owner": {
+			state: &types.GenesisState{
+				Subaccounts:      []types.Subaccount{{Id: businessID, AccountType: types.AccountType_ACCOUNT_TYPE_SPOT}},
+				TypedSubaccounts: []types.TypedSubaccount{{Owner: sample.AccAddress(), AccountType: types.AccountType_ACCOUNT_TYPE_SPOT, SubaccountId: businessID}},
+			},
+			expectedError: types.ErrGenesisTypedAccountInvalid,
+		},
+		"cursor does not advance past assigned business number": {
+			state: &types.GenesisState{
+				Subaccounts:           []types.Subaccount{{Id: businessID, AccountType: types.AccountType_ACCOUNT_TYPE_SPOT}},
+				BusinessNumberCursors: []types.BusinessSubaccountNumberCursor{{Owner: owner, NextNumber: 1}},
+			},
+			expectedError: types.ErrGenesisBusinessCursorInvalid,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := tc.state.Validate()
+			require.ErrorIs(t, err, tc.expectedError)
+		})
+	}
+}

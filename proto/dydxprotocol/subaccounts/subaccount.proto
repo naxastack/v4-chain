@@ -16,6 +16,14 @@ message SubaccountId {
   uint32 number = 2;
 }
 
+// AccountType identifies the business purpose of a subaccount.
+enum AccountType {
+  ACCOUNT_TYPE_UNSPECIFIED = 0;
+  ACCOUNT_TYPE_PERPETUAL = 1;
+  ACCOUNT_TYPE_SPOT = 2;
+  ACCOUNT_TYPE_FUNDING = 3;
+}
+
 // Subaccount defines a single sub-account for a given address.
 // Subaccounts are uniquely indexed by a subaccountNumber/owner pair.
 message Subaccount {
@@ -30,4 +38,6 @@ message Subaccount {
   // Set by the owner. If true, then margin trades can be made in this
   // subaccount.
   bool margin_enabled = 4;
+  // Persistent business type.
+  AccountType account_type = 5;
 }

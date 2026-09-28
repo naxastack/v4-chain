@@ -565,6 +565,7 @@ func _Msg_SetActiveState_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+var Msg_serviceDesc = _Msg_serviceDesc
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "dydxprotocol.accountplus.Msg",
 	HandlerType: (*MsgServer)(nil),

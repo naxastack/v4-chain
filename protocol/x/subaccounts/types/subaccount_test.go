@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/dydxprotocol/v4-chain/protocol/dtypes"
 	"github.com/dydxprotocol/v4-chain/protocol/testutil/constants"
 	"github.com/dydxprotocol/v4-chain/protocol/testutil/sample"
 	testutil "github.com/dydxprotocol/v4-chain/protocol/testutil/util"
@@ -12,6 +14,51 @@ import (
 	"github.com/dydxprotocol/v4-chain/protocol/x/subaccounts/types"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSubaccount_AccountTypeProtoRoundTrip(t *testing.T) {
+	tests := map[string]types.AccountType{
+		"perpetual": types.AccountType_ACCOUNT_TYPE_PERPETUAL,
+		"spot":      types.AccountType_ACCOUNT_TYPE_SPOT,
+		"funding":   types.AccountType_ACCOUNT_TYPE_FUNDING,
+	}
+
+	for name, accountType := range tests {
+		t.Run(name, func(t *testing.T) {
+			original := &types.Subaccount{
+				Id: &types.SubaccountId{
+					Owner:  sample.AccAddress(),
+					Number: 1,
+				},
+				AccountType: accountType,
+			}
+
+			encoded, err := proto.Marshal(original)
+			require.NoError(t, err)
+
+			decoded := new(types.Subaccount)
+			require.NoError(t, proto.Unmarshal(encoded, decoded))
+			require.Equal(t, original, decoded)
+		})
+	}
+}
+
+func TestSubaccount_AccountTypeDefaultsToUnspecifiedWhenMissing(t *testing.T) {
+	// The zero proto3 enum is omitted from the wire format, matching payloads
+	// written before the account_type field was introduced.
+	legacy := &types.Subaccount{
+		Id: &types.SubaccountId{
+			Owner:  sample.AccAddress(),
+			Number: 1,
+		},
+	}
+
+	encoded, err := proto.Marshal(legacy)
+	require.NoError(t, err)
+
+	decoded := new(types.Subaccount)
+	require.NoError(t, proto.Unmarshal(encoded, decoded))
+	require.Equal(t, types.AccountType_ACCOUNT_TYPE_UNSPECIFIED, decoded.GetAccountType())
+}
 
 func TestBaseQuantums_ToBigInt(t *testing.T) {
 	num := uint64(5)
@@ -330,4 +377,20 @@ func TestSubaccount_SetUsdcAssetPosition(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSubaccount_SetUsdcAssetPositionPreservesReservationWhenBalanceIsCleared(t *testing.T) {
+	subaccount := types.Subaccount{
+		AssetPositions: []*types.AssetPosition{{
+			AssetId:                  assettypes.AssetUsdc.Id,
+			Quantums:                 dtypes.NewInt(100),
+			StatefulReservedQuantums: dtypes.NewInt(40),
+		}},
+	}
+
+	subaccount.SetUsdcAssetPosition(big.NewInt(0))
+
+	require.Len(t, subaccount.AssetPositions, 1)
+	require.Zero(t, subaccount.AssetPositions[0].GetBigQuantums().Sign())
+	require.Equal(t, int64(40), subaccount.AssetPositions[0].StatefulReservedQuantums.BigInt().Int64())
 }

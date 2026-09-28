@@ -541,6 +541,7 @@ func _Msg_UpdateMarketParam_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+var Msg_serviceDesc = _Msg_serviceDesc
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "dydxprotocol.prices.Msg",
 	HandlerType: (*MsgServer)(nil),

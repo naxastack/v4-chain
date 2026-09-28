@@ -37,7 +37,9 @@ func (k Keeper) SetSubaccount(ctx sdk.Context, subaccount types.Subaccount) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(types.SubaccountKeyPrefix))
 	key := subaccount.Id.ToStateKey()
 
-	if len(subaccount.PerpetualPositions) == 0 && len(subaccount.AssetPositions) == 0 {
+	if len(subaccount.PerpetualPositions) == 0 && len(subaccount.AssetPositions) == 0 &&
+		(subaccount.AccountType == types.AccountType_ACCOUNT_TYPE_UNSPECIFIED ||
+			subaccount.AccountType == types.AccountType_ACCOUNT_TYPE_PERPETUAL) {
 		if store.Has(key) {
 			store.Delete(key)
 		}
@@ -415,10 +417,18 @@ func (k Keeper) UpdateSubaccounts(
 
 	// Apply the updates to asset positions and perpetual positions.
 	for i := range settledUpdates {
+		currentAccountType := settledUpdates[i].SettledSubaccount.AccountType
 		settledUpdates[i].SettledSubaccount = salib.CalculateUpdatedSubaccount(
 			settledUpdates[i],
 			perpInfos,
 		)
+
+		if err := types.ValidateAccountTypeTransition(
+			currentAccountType,
+			settledUpdates[i].SettledSubaccount.AccountType,
+		); err != nil {
+			return false, nil, err
+		}
 	}
 
 	// Transfer collateral between collateral pools for any isolated perpetual positions that changed
@@ -678,6 +688,15 @@ func (k Keeper) internalCanUpdateSubaccountsWithLeverage(
 					assetUpdate.GetId(),
 				)
 			}
+		}
+
+		// Validate the complete candidate before evaluating risk or applying side effects.
+		candidate := salib.CalculateUpdatedSubaccount(u, perpInfos)
+		if err := types.ValidateAccountTypeTransition(u.SettledSubaccount.AccountType, candidate.AccountType); err != nil {
+			return false, nil, err
+		}
+		if err := salib.ValidateSubaccountCandidate(candidate); err != nil {
+			return false, nil, err
 		}
 
 		// Get the new collateralization and margin requirements with the update applied.

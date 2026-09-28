@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package dydxprotocol.subaccounts;
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "dydxprotocol/subaccounts/subaccount.proto";
+
+option go_package = "github.com/dydxprotocol/v4-chain/protocol/x/subaccounts/types";
+
+// MsgCreateSubaccount creates one explicitly typed business subaccount.
+// The chain allocates the subaccount number; callers must not provide one.
+message MsgCreateSubaccount {
+  option (cosmos.msg.v1.signer) = "owner";
+  string owner = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  AccountType account_type = 2;
+}
+
+// MsgCreateSubaccountResponse returns the identifier allocated by the chain.
+message MsgCreateSubaccountResponse {
+  SubaccountId subaccount_id = 1;
+}
+
+// Msg defines the subaccounts transaction service.
+service Msg {
+  // CreateSubaccount creates a FUNDING or SPOT subaccount for the signer.
+  rpc CreateSubaccount(MsgCreateSubaccount) returns (MsgCreateSubaccountResponse);
+}

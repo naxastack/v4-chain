@@ -20,4 +20,10 @@ message AssetPosition {
   // time this position was settled
   // TODO(DEC-582): pending margin trading being added.
   uint64 index = 3;
-}
+  // Aggregate quantums reserved by persistent stateful orders.
+  bytes stateful_reserved_quantums = 4 [
+    (gogoproto.customtype) =
+        "github.com/dydxprotocol/v4-chain/protocol/dtypes.SerializableInt",
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "stateful_reserved_quantums,omitempty"
+  ];}

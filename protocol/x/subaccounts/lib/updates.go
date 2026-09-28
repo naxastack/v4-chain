@@ -69,6 +69,7 @@ func GetSettledSubaccountWithPerpetuals(
 		AssetPositions:     subaccount.AssetPositions,
 		PerpetualPositions: newPerpetualPositions,
 		MarginEnabled:      subaccount.MarginEnabled,
+		AccountType:        subaccount.AccountType,
 	}
 	newUsdcPosition := new(big.Int).Add(
 		subaccount.GetUsdcPosition(),
@@ -100,6 +101,25 @@ func GetSettledSubaccountWithPerpetuals(
 // Note that the inequality `newNetCollateral / newMaintenanceMargin >= curNetCollateral / curMaintenanceMargin`
 // has divide-by-zero issue when margin requirements are zero. To make sure the state
 // transition is valid, we special case this scenario and only allow state transition that improves net collateral.
+// ValidateSubaccountCandidate validates invariants that apply to the candidate state
+// produced by an asset or perpetual update.
+func ValidateSubaccountCandidate(subaccount types.Subaccount) error {
+	if !subaccount.AccountType.IsBusinessAccountType() {
+		return nil
+	}
+	if len(subaccount.PerpetualPositions) != 0 {
+		return types.ErrBusinessSubaccountHasPerpetual
+	}
+	for _, position := range subaccount.AssetPositions {
+		if position == nil || position.GetBigQuantums() == nil {
+			continue
+		}
+		if position.GetBigQuantums().Sign() < 0 {
+			return types.ErrBusinessAssetPositionNegative
+		}
+	}
+	return nil
+}
 func IsValidStateTransitionForUndercollateralizedSubaccount(
 	riskCur margin.Risk,
 	riskNew margin.Risk,
@@ -329,6 +349,9 @@ func CalculateUpdatedSubaccount(
 		settledUpdate.PerpetualUpdates,
 		perpInfos,
 	)
+	if result.AccountType == types.AccountType_ACCOUNT_TYPE_UNSPECIFIED && len(result.PerpetualPositions) > 0 {
+		result.AccountType = types.AccountType_ACCOUNT_TYPE_PERPETUAL
+	}
 	return result
 }
 

@@ -4,7 +4,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 )
 
-// DefaultGenesis returns the default Capability genesis state
+// DefaultGenesis returns the default Capability genesis state.
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		Subaccounts: []Subaccount{},
@@ -15,8 +15,12 @@ func DefaultGenesis() *GenesisState {
 // failure.
 func (gs GenesisState) Validate() error {
 	includedAccounts := make(map[SubaccountId]bool)
+	accountsByID := make(map[SubaccountId]Subaccount)
 	for _, sa := range gs.Subaccounts {
 		subaccountId := sa.GetId()
+		if subaccountId == nil {
+			return ErrInvalidSubaccountIdOwner
+		}
 		if err := subaccountId.Validate(); err != nil {
 			return err
 		}
@@ -25,6 +29,7 @@ func (gs GenesisState) Validate() error {
 				"duplicate subaccount id %+v found within genesis state", subaccountId)
 		}
 		includedAccounts[*subaccountId] = true
+		accountsByID[*subaccountId] = sa
 
 		// Validate AssetPositions.
 		// TODO(DEC-582): once we support different assets, remove this validation.
@@ -33,21 +38,33 @@ func (gs GenesisState) Validate() error {
 		}
 		for i := 0; i < len(sa.GetAssetPositions()); i++ {
 			assetP := sa.GetAssetPositions()[i]
+			if assetP == nil {
+				return ErrAssetPositionNotSupported
+			}
 			if i > 0 && assetP.AssetId <= sa.GetAssetPositions()[i-1].AssetId {
 				return ErrAssetPositionsOutOfOrder
 			}
-			// TODO(DEC-582): once we support different assets, remove this validation.
 			if assetP.AssetId != 0 {
 				return ErrAssetPositionNotSupported
 			}
 			if assetP.GetBigQuantums().Sign() == 0 {
 				return ErrAssetPositionZeroQuantum
 			}
+			reserved := assetP.StatefulReservedQuantums.BigInt()
+			if reserved != nil && reserved.Sign() < 0 {
+				return ErrStatefulReservedQuantumsInvalid
+			}
+			if reserved != nil && assetP.GetBigQuantums().Cmp(reserved) < 0 {
+				return ErrStatefulReservedQuantumsInvalid
+			}
 		}
 
 		// Validate PerpetualPositions.
 		for i := 0; i < len(sa.GetPerpetualPositions()); i++ {
 			perpP := sa.GetPerpetualPositions()[i]
+			if perpP == nil {
+				return ErrPerpPositionZeroQuantum
+			}
 			if i > 0 && perpP.PerpetualId <= sa.GetPerpetualPositions()[i-1].PerpetualId {
 				return ErrPerpPositionsOutOfOrder
 			}
@@ -55,6 +72,43 @@ func (gs GenesisState) Validate() error {
 				return ErrPerpPositionZeroQuantum
 			}
 		}
+	}
+
+	typedKeys := make(map[string]bool)
+	for _, mapping := range gs.TypedSubaccounts {
+		if !mapping.AccountType.IsBusinessAccountType() || mapping.SubaccountId == nil {
+			return ErrGenesisTypedAccountInvalid
+		}
+		if err := mapping.SubaccountId.Validate(); err != nil {
+			return errorsmod.Wrapf(ErrGenesisTypedAccountInvalid, "invalid mapped subaccount: %v", err)
+		}
+		key := mapping.Owner + ":" + mapping.AccountType.String()
+		if typedKeys[key] {
+			return ErrGenesisTypedAccountInvalid
+		}
+		typedKeys[key] = true
+		sa, found := accountsByID[*mapping.SubaccountId]
+		if !found || sa.GetId().Owner != mapping.Owner || sa.AccountType != mapping.AccountType {
+			return ErrGenesisTypedAccountInvalid
+		}
+	}
+
+	cursorOwners := make(map[string]bool)
+	maxBusinessNumber := make(map[string]uint32)
+	for _, sa := range gs.Subaccounts {
+		if sa.AccountType.IsBusinessAccountType() && sa.Id != nil && sa.Id.Number > maxBusinessNumber[sa.Id.Owner] {
+			maxBusinessNumber[sa.Id.Owner] = sa.Id.Number
+		}
+	}
+	for _, cursor := range gs.BusinessNumberCursors {
+		if cursor.Owner == "" || cursor.NextNumber < 1 || cursor.NextNumber > MaxSubaccountIdNumber+1 ||
+			cursor.NextNumber <= maxBusinessNumber[cursor.Owner] {
+			return ErrGenesisBusinessCursorInvalid
+		}
+		if cursorOwners[cursor.Owner] {
+			return ErrGenesisBusinessCursorInvalid
+		}
+		cursorOwners[cursor.Owner] = true
 	}
 	return nil
 }

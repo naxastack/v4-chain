@@ -517,7 +517,9 @@
     }
   },
   "subaccounts": {
-    "subaccounts": []
+    "business_number_cursors": [],
+    "subaccounts": [],
+    "typed_subaccounts": []
   },
   "transfer": {
     "port_id": "transfer",

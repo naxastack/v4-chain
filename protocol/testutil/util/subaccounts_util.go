@@ -24,8 +24,9 @@ func CreateSingleAssetPosition(
 	quoteBalance *big.Int,
 ) *satypes.AssetPosition {
 	return &satypes.AssetPosition{
-		AssetId:  assetId,
-		Quantums: dtypes.NewIntFromBigInt(quoteBalance),
+		AssetId:                  assetId,
+		Quantums:                 dtypes.NewIntFromBigInt(quoteBalance),
+		StatefulReservedQuantums: dtypes.ZeroInt(),
 	}
 }
 
@@ -104,4 +105,29 @@ func ChangeUsdcBalance(subaccount satypes.Subaccount, deltaQuantums int64) satyp
 		PerpetualPositions: perpetualPositions,
 		MarginEnabled:      subaccount.MarginEnabled,
 	}
+}
+
+// NormalizeAssetPositionForComparison makes unset and canonical zero reservation
+// equivalent in tests while preserving non-zero reservation values.
+func NormalizeAssetPositionForComparison(position *satypes.AssetPosition) *satypes.AssetPosition {
+	if position == nil {
+		return nil
+	}
+	copy := position.DeepCopy()
+	if copy.StatefulReservedQuantums.IsNil() {
+		copy.StatefulReservedQuantums = dtypes.ZeroInt()
+	}
+	return &copy
+}
+
+// NormalizeAssetPositionsForComparison applies the canonical reservation form to a slice.
+func NormalizeAssetPositionsForComparison(positions []*satypes.AssetPosition) []*satypes.AssetPosition {
+	if positions == nil {
+		return nil
+	}
+	result := make([]*satypes.AssetPosition, len(positions))
+	for i, position := range positions {
+		result[i] = NormalizeAssetPositionForComparison(position)
+	}
+	return result
 }

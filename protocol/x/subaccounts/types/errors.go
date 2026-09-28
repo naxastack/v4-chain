@@ -39,6 +39,17 @@ var (
 	ErrInvalidSubaccountIdOwner = errorsmod.Register(ModuleName, 201, "subaccount id owner is an invalid address")
 	ErrDuplicateSubaccountIds   = errorsmod.Register(ModuleName, 202, "duplicate subaccount id found in genesis")
 
+	// 203 - 299: typed account creation.
+	ErrInvalidAccountType              = errorsmod.Register(ModuleName, 203, "account type is not valid for business subaccount creation")
+	ErrAccountTypeAlreadyExists        = errorsmod.Register(ModuleName, 204, "account type already exists for owner")
+	ErrSubaccountNumberExhausted       = errorsmod.Register(ModuleName, 205, "business subaccount number exhausted")
+	ErrBusinessSubaccountHasPerpetual  = errorsmod.Register(ModuleName, 206, "business subaccount cannot contain perpetual positions")
+	ErrBusinessAssetPositionNegative   = errorsmod.Register(ModuleName, 207, "business subaccount asset position cannot be negative")
+	ErrGenesisTypedAccountInvalid      = errorsmod.Register(ModuleName, 208, "genesis typed account mapping is invalid")
+	ErrGenesisBusinessCursorInvalid    = errorsmod.Register(ModuleName, 209, "genesis business account cursor is invalid")
+	ErrStatefulReservedQuantumsInvalid = errorsmod.Register(ModuleName, 210, "stateful reserved quantums exceed asset quantums")
+	ErrAccountTypeImmutable            = errorsmod.Register(ModuleName, 211, "subaccount account type cannot be changed")
+
 	// 300 - 399: asset position related.
 	ErrAssetPositionsOutOfOrder       = errorsmod.Register(ModuleName, 300, "asset positions are out of order")
 	ErrAssetPositionZeroQuantum       = errorsmod.Register(ModuleName, 301, "asset position's quantum cannot be zero")

@@ -151,6 +151,10 @@ func TestNormalMsgs_Key(t *testing.T) {
 		"/dydxprotocol.sending.MsgWithdrawFromSubaccount",
 		"/dydxprotocol.sending.MsgWithdrawFromSubaccountResponse",
 
+		// subaccounts
+		"/dydxprotocol.subaccounts.MsgCreateSubaccount",
+		"/dydxprotocol.subaccounts.MsgCreateSubaccountResponse",
+
 		// vault
 		"/dydxprotocol.vault.MsgAllocateToVault",
 		"/dydxprotocol.vault.MsgAllocateToVaultResponse",

@@ -30,6 +30,12 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 			),
 		)
 	}
+	for _, mapping := range genState.TypedSubaccounts {
+		k.SetTypedSubaccount(ctx, mapping.Owner, mapping.AccountType, *mapping.SubaccountId)
+	}
+	for _, cursor := range genState.BusinessNumberCursors {
+		k.SetNextBusinessSubaccountNumber(ctx, cursor.Owner, cursor.NextNumber)
+	}
 }
 
 // ExportGenesis returns the subaccounts module's exported genesis.
@@ -37,6 +43,14 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 
 	genesis.Subaccounts = k.GetAllSubaccount(ctx)
+	typedSubaccounts := k.GetAllTypedSubaccounts(ctx)
+	if len(typedSubaccounts) > 0 {
+		genesis.TypedSubaccounts = typedSubaccounts
+	}
+	cursors := k.GetAllNextBusinessSubaccountNumbers(ctx)
+	if len(cursors) > 0 {
+		genesis.BusinessNumberCursors = cursors
+	}
 
 	return genesis
 }

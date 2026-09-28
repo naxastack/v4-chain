@@ -252,6 +252,7 @@ func _LiquidationService_LiquidateSubaccounts_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+var LiquidationService_serviceDesc = _LiquidationService_serviceDesc
 var _LiquidationService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "dydxprotocol.daemons.liquidation.LiquidationService",
 	HandlerType: (*LiquidationServiceServer)(nil),

@@ -476,6 +476,7 @@ func _Query_BlockMessageIds_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "dydxprotocol.delaymsg.Query",
 	HandlerType: (*QueryServer)(nil),

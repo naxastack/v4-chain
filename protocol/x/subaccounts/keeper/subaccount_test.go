@@ -3039,7 +3039,7 @@ func TestUpdateSubaccounts(t *testing.T) {
 			}
 			require.Equal(t, len(newSubaccount.AssetPositions), len(tc.expectedAssetPositions))
 			for i, ep := range tc.expectedAssetPositions {
-				require.Equal(t, *ep, *newSubaccount.AssetPositions[i])
+				require.Equal(t, *testutil.NormalizeAssetPositionForComparison(ep), *testutil.NormalizeAssetPositionForComparison(newSubaccount.AssetPositions[i]))
 			}
 
 			for collateralPoolAddr, expectedUsdcBal := range tc.expectedCollateralPoolUsdcBalances {
@@ -4499,7 +4499,7 @@ func TestUpdateSubaccounts_WithdrawalsBlocked(t *testing.T) {
 				newSubaccount := keeper.GetSubaccount(ctx, subaccountIdToCheck)
 				require.Equal(t, len(expectedAssetPositions), len(newSubaccount.AssetPositions))
 				for i, ap := range expectedAssetPositions {
-					require.Equal(t, *ap, *newSubaccount.AssetPositions[i])
+					require.Equal(t, *testutil.NormalizeAssetPositionForComparison(ap), *testutil.NormalizeAssetPositionForComparison(newSubaccount.AssetPositions[i]))
 				}
 			}
 		})

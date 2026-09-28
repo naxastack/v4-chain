@@ -275,6 +275,10 @@ var (
 		"/dydxprotocol.stats.MsgUpdateParams":         {},
 		"/dydxprotocol.stats.MsgUpdateParamsResponse": {},
 
+		// subaccounts
+		"/dydxprotocol.subaccounts.MsgCreateSubaccount":         {},
+		"/dydxprotocol.subaccounts.MsgCreateSubaccountResponse": {},
+
 		// vault
 		"/dydxprotocol.vault.MsgAllocateToVault":                    {},
 		"/dydxprotocol.vault.MsgAllocateToVaultResponse":            {},

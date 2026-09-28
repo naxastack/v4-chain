@@ -2137,6 +2137,7 @@ func (x *queryStreamOrderbookUpdatesServer) Send(m *StreamOrderbookUpdatesRespon
 	return x.ServerStream.SendMsg(m)
 }
 
+var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "dydxprotocol.clob.Query",
 	HandlerType: (*QueryServer)(nil),

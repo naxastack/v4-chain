@@ -493,6 +493,7 @@ func _Msg_SetStakingTiers_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+var Msg_serviceDesc = _Msg_serviceDesc
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "dydxprotocol.feetiers.Msg",
 	HandlerType: (*MsgServer)(nil),

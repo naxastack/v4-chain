@@ -211,6 +211,7 @@ func _BridgeService_AddBridgeEvents_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+var BridgeService_serviceDesc = _BridgeService_serviceDesc
 var _BridgeService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "dydxprotocol.daemons.bridge.BridgeService",
 	HandlerType: (*BridgeServiceServer)(nil),

@@ -58,3 +58,38 @@ func assertSubaccountUpdateEventsInIndexerBlock(
 	subaccountUpdates := keepertest.GetSubaccountUpdateEventsFromIndexerBlock(ctx, k)
 	require.Len(t, subaccountUpdates, numSubaccounts)
 }
+
+func TestGenesisPreservesTypedMappingsAndBusinessCursors(t *testing.T) {
+	spotOwner := "dydx1spotowner0000000000000000000000000000000"
+	fundingOwner := "dydx1fundingowner0000000000000000000000000000"
+	genesisState := types.GenesisState{
+		Subaccounts: []types.Subaccount{
+			{
+				Id:             &types.SubaccountId{Owner: spotOwner, Number: 1},
+				AccountType:    types.AccountType_ACCOUNT_TYPE_SPOT,
+				AssetPositions: testutil.CreateUsdcAssetPositions(big.NewInt(1_000)),
+			},
+			{
+				Id:             &types.SubaccountId{Owner: fundingOwner, Number: 1},
+				AccountType:    types.AccountType_ACCOUNT_TYPE_FUNDING,
+				AssetPositions: testutil.CreateUsdcAssetPositions(big.NewInt(2_000)),
+			},
+		},
+		TypedSubaccounts: []types.TypedSubaccount{
+			{Owner: spotOwner, AccountType: types.AccountType_ACCOUNT_TYPE_SPOT, SubaccountId: &types.SubaccountId{Owner: spotOwner, Number: 1}},
+			{Owner: fundingOwner, AccountType: types.AccountType_ACCOUNT_TYPE_FUNDING, SubaccountId: &types.SubaccountId{Owner: fundingOwner, Number: 1}},
+		},
+		BusinessNumberCursors: []types.BusinessSubaccountNumberCursor{
+			{Owner: spotOwner, NextNumber: 2},
+			{Owner: fundingOwner, NextNumber: 2},
+		},
+	}
+
+	ctx, k, _, _, _, _, _, _, _, _, _ := keepertest.SubaccountsKeepers(t, true)
+	subaccounts.InitGenesis(ctx, *k, genesisState)
+	got := subaccounts.ExportGenesis(ctx, *k)
+	require.NotNil(t, got)
+	require.ElementsMatch(t, genesisState.Subaccounts, got.Subaccounts)
+	require.ElementsMatch(t, genesisState.TypedSubaccounts, got.TypedSubaccounts)
+	require.ElementsMatch(t, genesisState.BusinessNumberCursors, got.BusinessNumberCursors)
+}

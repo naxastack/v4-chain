@@ -2,6 +2,7 @@ syntax = "proto3";
 package dydxprotocol.subaccounts;
 
 import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
 import "dydxprotocol/subaccounts/subaccount.proto";
 
 option go_package = "github.com/dydxprotocol/v4-chain/protocol/x/subaccounts/types";
@@ -9,4 +10,21 @@ option go_package = "github.com/dydxprotocol/v4-chain/protocol/x/subaccounts/typ
 // GenesisState defines the subaccounts module's genesis state.
 message GenesisState {
   repeated Subaccount subaccounts = 1 [ (gogoproto.nullable) = false ];
+  // Explicit owner/type mappings for persisted FUNDING and SPOT accounts.
+  repeated TypedSubaccount typed_subaccounts = 2 [ (gogoproto.nullable) = false ];
+  // Next monotonic business subaccount number for each owner.
+  repeated BusinessSubaccountNumberCursor business_number_cursors = 3 [ (gogoproto.nullable) = false ];
+}
+
+// TypedSubaccount records the unique owner/type mapping.
+message TypedSubaccount {
+  string owner = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  AccountType account_type = 2;
+  SubaccountId subaccount_id = 3;
+}
+
+// BusinessSubaccountNumberCursor records the next number to allocate.
+message BusinessSubaccountNumberCursor {
+  string owner = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  uint32 next_number = 2;
 }

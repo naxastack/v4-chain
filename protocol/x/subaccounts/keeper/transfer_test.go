@@ -283,8 +283,8 @@ func TestWithdrawFundsFromSubaccountToAccount_DepositFundsFromAccountToSubaccoun
 			updatedSubaccount := keeper.GetSubaccount(ctx, *subaccount.Id)
 			if tc.expectedAssetPositions != nil {
 				require.Equal(t,
-					tc.expectedAssetPositions,
-					updatedSubaccount.AssetPositions,
+					testutil.NormalizeAssetPositionsForComparison(tc.expectedAssetPositions),
+					testutil.NormalizeAssetPositionsForComparison(updatedSubaccount.AssetPositions),
 				)
 			}
 			require.Equal(t,
@@ -830,8 +830,8 @@ func TestTransferFundsFromSubaccountToSubaccount_Success(t *testing.T) {
 			updatedSenderSubaccount := keeper.GetSubaccount(ctx, *senderSubaccount.Id)
 			if tc.expectedSenderAssetPositions != nil {
 				require.Equal(t,
-					tc.expectedSenderAssetPositions,
-					updatedSenderSubaccount.AssetPositions,
+					testutil.NormalizeAssetPositionsForComparison(tc.expectedSenderAssetPositions),
+					testutil.NormalizeAssetPositionsForComparison(updatedSenderSubaccount.AssetPositions),
 				)
 			}
 			require.Equal(t,
@@ -842,8 +842,8 @@ func TestTransferFundsFromSubaccountToSubaccount_Success(t *testing.T) {
 			updatedRecipientSubaccount := keeper.GetSubaccount(ctx, *recipientSubaccount.Id)
 			if tc.expectedRecipientAssetPositions != nil {
 				require.Equal(t,
-					tc.expectedRecipientAssetPositions,
-					updatedRecipientSubaccount.AssetPositions,
+					testutil.NormalizeAssetPositionsForComparison(tc.expectedRecipientAssetPositions),
+					testutil.NormalizeAssetPositionsForComparison(updatedRecipientSubaccount.AssetPositions),
 				)
 			}
 			require.Equal(t,
@@ -1166,14 +1166,14 @@ func TestTransferFundsFromSubaccountToSubaccount_Failure(t *testing.T) {
 			// Check the subaccount has been updated as expected.
 			updatedSenderSubaccount := keeper.GetSubaccount(ctx, *senderSubaccount.Id)
 			require.Equal(t,
-				tc.senderAssetPositions,
-				updatedSenderSubaccount.AssetPositions,
+				testutil.NormalizeAssetPositionsForComparison(tc.senderAssetPositions),
+				testutil.NormalizeAssetPositionsForComparison(updatedSenderSubaccount.AssetPositions),
 			)
 
 			updatedRecipientSubaccount := keeper.GetSubaccount(ctx, *recipientSubaccount.Id)
 			require.Equal(t,
-				tc.recipientAssetPositions,
-				updatedRecipientSubaccount.AssetPositions,
+				testutil.NormalizeAssetPositionsForComparison(tc.recipientAssetPositions),
+				testutil.NormalizeAssetPositionsForComparison(updatedRecipientSubaccount.AssetPositions),
 			)
 
 			// Check the subaccount module balance.

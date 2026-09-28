@@ -243,6 +243,7 @@ func _Msg_DelayMessage_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+var Msg_serviceDesc = _Msg_serviceDesc
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "dydxprotocol.delaymsg.Msg",
 	HandlerType: (*MsgServer)(nil),

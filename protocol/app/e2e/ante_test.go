@@ -264,6 +264,7 @@ func TestParallelAnteHandler_ClobAndOther(t *testing.T) {
 				Quantums: dtypes.NewIntFromUint64(
 					constants.Usdc_Asset_500_000.Quantums.BigInt().Uint64() -
 						transferCounts[i].Load()*constants.Usdc_Asset_1.Quantums.BigInt().Uint64()),
+				StatefulReservedQuantums: dtypes.ZeroInt(),
 			}},
 			subAccount.AssetPositions,
 		)

@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/dydxprotocol/v4-chain/protocol/dtypes"
 	"github.com/dydxprotocol/v4-chain/protocol/lib/margin"
 	perp_testutil "github.com/dydxprotocol/v4-chain/protocol/testutil/perpetuals"
 	testutil "github.com/dydxprotocol/v4-chain/protocol/testutil/util"
@@ -185,4 +186,74 @@ func TestGetRiskForSubaccount_Panic(t *testing.T) {
 	require.Panics(t, func() {
 		_, _ = lib.GetRiskForSubaccount(subaccount, emptyPerpInfos, nil)
 	})
+}
+
+func TestCalculateUpdatedSubaccountPreservesAccountType(t *testing.T) {
+	subaccount := types.Subaccount{
+		Id:          &types.SubaccountId{Owner: "test", Number: 1},
+		AccountType: types.AccountType_ACCOUNT_TYPE_SPOT,
+	}
+	updated := lib.CalculateUpdatedSubaccount(
+		types.SettledUpdate{SettledSubaccount: subaccount},
+		perptypes.PerpInfos{},
+	)
+	require.Equal(t, types.AccountType_ACCOUNT_TYPE_SPOT, updated.AccountType)
+}
+
+func TestValidateSubaccountCandidate(t *testing.T) {
+	tests := []struct {
+		name       string
+		subaccount types.Subaccount
+		expected   error
+	}{
+		{
+			name: "empty business account is valid",
+			subaccount: types.Subaccount{
+				AccountType: types.AccountType_ACCOUNT_TYPE_FUNDING,
+			},
+		},
+		{
+			name: "business account cannot contain perpetual position",
+			subaccount: types.Subaccount{
+				AccountType:        types.AccountType_ACCOUNT_TYPE_SPOT,
+				PerpetualPositions: []*types.PerpetualPosition{{PerpetualId: 1}},
+			},
+			expected: types.ErrBusinessSubaccountHasPerpetual,
+		},
+		{
+			name: "business account cannot contain negative asset",
+			subaccount: types.Subaccount{
+				AccountType: types.AccountType_ACCOUNT_TYPE_SPOT,
+				AssetPositions: []*types.AssetPosition{{
+					AssetId:  1,
+					Quantums: dtypes.NewInt(-1),
+				}},
+			},
+			expected: types.ErrBusinessAssetPositionNegative,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := lib.ValidateSubaccountCandidate(tc.subaccount)
+			if tc.expected == nil {
+				require.NoError(t, err)
+			} else {
+				require.ErrorIs(t, err, tc.expected)
+			}
+		})
+	}
+}
+
+func TestCalculateUpdatedSubaccountDefaultsPerpetualType(t *testing.T) {
+	subaccount := types.Subaccount{
+		Id: &types.SubaccountId{Owner: "test", Number: 0},
+		PerpetualPositions: []*types.PerpetualPosition{
+			testutil.CreateSinglePerpetualPosition(1, big.NewInt(1), big.NewInt(0), big.NewInt(0)),
+		},
+	}
+	updated := lib.CalculateUpdatedSubaccount(
+		types.SettledUpdate{SettledSubaccount: subaccount},
+		perptypes.PerpInfos{},
+	)
+	require.Equal(t, types.AccountType_ACCOUNT_TYPE_PERPETUAL, updated.AccountType)
 }
