@@ -18,6 +18,7 @@ import (
 	"github.com/dydxprotocol/v4-chain/protocol/lib"
 	accountplus "github.com/dydxprotocol/v4-chain/protocol/x/accountplus/types"
 	affiliates "github.com/dydxprotocol/v4-chain/protocol/x/affiliates/types"
+	assets "github.com/dydxprotocol/v4-chain/protocol/x/assets/types"
 	blocktime "github.com/dydxprotocol/v4-chain/protocol/x/blocktime/types"
 	bridge "github.com/dydxprotocol/v4-chain/protocol/x/bridge/types"
 	clob "github.com/dydxprotocol/v4-chain/protocol/x/clob/types"
@@ -118,6 +119,12 @@ var (
 		"/dydxprotocol.affiliates.MsgUpdateAffiliateParametersResponse": nil,
 		"/dydxprotocol.affiliates.MsgUpdateAffiliateOverrides":          &affiliates.MsgUpdateAffiliateOverrides{},
 		"/dydxprotocol.affiliates.MsgUpdateAffiliateOverridesResponse":  nil,
+
+		// assets
+		"/dydxprotocol.assets.MsgCreateAsset":               &assets.MsgCreateAsset{},
+		"/dydxprotocol.assets.MsgCreateAssetResponse":       nil,
+		"/dydxprotocol.assets.MsgUpdateAssetPolicy":         &assets.MsgUpdateAssetPolicy{},
+		"/dydxprotocol.assets.MsgUpdateAssetPolicyResponse": nil,
 
 		// accountplus
 		"/dydxprotocol.accountplus.MsgSetActiveState":         &accountplus.MsgSetActiveState{},

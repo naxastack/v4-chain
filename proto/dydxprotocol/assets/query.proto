@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "dydxprotocol/assets/asset.proto";
+import "dydxprotocol/assets/asset_policy.proto";
 
 option go_package = "github.com/dydxprotocol/v4-chain/protocol/x/assets/types";
 
@@ -18,6 +19,18 @@ service Query {
   // Queries a list of Asset items.
   rpc AllAssets(QueryAllAssetsRequest) returns (QueryAllAssetsResponse) {
     option (google.api.http).get = "/dydxprotocol/assets/asset";
+  }
+
+  // Queries an AssetPolicy by asset id.
+  rpc AssetPolicy(QueryAssetPolicyRequest) returns (QueryAssetPolicyResponse) {
+    option (google.api.http).get =
+        "/dydxprotocol/assets/asset_policy/{asset_id}";
+  }
+
+  // Queries all AssetPolicy items.
+  rpc AllAssetPolicies(QueryAllAssetPoliciesRequest)
+      returns (QueryAllAssetPoliciesResponse) {
+    option (google.api.http).get = "/dydxprotocol/assets/asset_policy";
   }
 }
 
@@ -35,5 +48,24 @@ message QueryAllAssetsRequest {
 // QueryAllAssetsResponse is response type for the AllAssets RPC method.
 message QueryAllAssetsResponse {
   repeated Asset asset = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryAssetPolicyRequest queries an AssetPolicy by asset id.
+message QueryAssetPolicyRequest { uint32 asset_id = 1; }
+
+// QueryAssetPolicyResponse is the response for the AssetPolicy RPC.
+message QueryAssetPolicyResponse {
+  AssetPolicy policy = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryAllAssetPoliciesRequest queries all asset policies.
+message QueryAllAssetPoliciesRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryAllAssetPoliciesResponse contains all requested asset policies.
+message QueryAllAssetPoliciesResponse {
+  repeated AssetPolicy policies = 1 [ (gogoproto.nullable) = false ];
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }

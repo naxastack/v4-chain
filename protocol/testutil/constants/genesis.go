@@ -41,6 +41,16 @@ const GenesisState = `{
           "market_id": 0,
           "symbol": "USDC"
         }
+      ],
+      "asset_policies": [
+        {
+          "asset_id": 0,
+          "status": "ASSET_POLICY_STATUS_ACTIVE",
+          "deposits_enabled": true,
+          "withdrawals_enabled": true,
+          "spot_trading_enabled": true,
+          "perpetual_enabled": true
+        }
       ]
     },
     "affiliates": {},

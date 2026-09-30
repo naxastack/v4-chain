@@ -27,6 +27,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func withPerpetualAccountType(subaccount satypes.Subaccount) satypes.Subaccount {
+	subaccount.AccountType = satypes.AccountType_ACCOUNT_TYPE_PERPETUAL
+	return subaccount
+}
+
 func TestTransfer_Isolated_Non_Isolated_Subaccounts(t *testing.T) {
 	tests := map[string]struct {
 		// State.
@@ -70,7 +75,7 @@ func TestTransfer_Isolated_Non_Isolated_Subaccounts(t *testing.T) {
 				constants.IsoUsd_IsolatedMarket,
 			},
 			expectedSubaccounts: []satypes.Subaccount{
-				testutil.ChangeUsdcBalance(constants.Alice_Num0_1ISO_LONG_10_000USD, -100_000_000),
+				withPerpetualAccountType(testutil.ChangeUsdcBalance(constants.Alice_Num0_1ISO_LONG_10_000USD, -100_000_000)),
 				testutil.ChangeUsdcBalance(constants.Bob_Num0_10_000USD, 100_000_000),
 			},
 			expectedCollateralPoolBalances: map[string]int64{
@@ -103,7 +108,7 @@ func TestTransfer_Isolated_Non_Isolated_Subaccounts(t *testing.T) {
 				constants.IsoUsd_IsolatedMarket,
 			},
 			expectedSubaccounts: []satypes.Subaccount{
-				testutil.ChangeUsdcBalance(constants.Alice_Num0_1ISO_LONG_10_000USD, 100_000_000),
+				withPerpetualAccountType(testutil.ChangeUsdcBalance(constants.Alice_Num0_1ISO_LONG_10_000USD, 100_000_000)),
 				testutil.ChangeUsdcBalance(constants.Bob_Num0_10_000USD, -100_000_000),
 			},
 			expectedCollateralPoolBalances: map[string]int64{
@@ -139,8 +144,8 @@ func TestTransfer_Isolated_Non_Isolated_Subaccounts(t *testing.T) {
 				constants.Iso2Usd_IsolatedMarket,
 			},
 			expectedSubaccounts: []satypes.Subaccount{
-				testutil.ChangeUsdcBalance(constants.Alice_Num0_1ISO_LONG_10_000USD, -100_000_000),
-				testutil.ChangeUsdcBalance(constants.Bob_Num0_1ISO2_LONG_10_000USD, 100_000_000),
+				withPerpetualAccountType(testutil.ChangeUsdcBalance(constants.Alice_Num0_1ISO_LONG_10_000USD, -100_000_000)),
+				withPerpetualAccountType(testutil.ChangeUsdcBalance(constants.Bob_Num0_1ISO2_LONG_10_000USD, 100_000_000)),
 			},
 			expectedCollateralPoolBalances: map[string]int64{
 				authtypes.NewModuleAddress(
@@ -234,8 +239,8 @@ func TestTransfer_Isolated_Non_Isolated_Subaccounts(t *testing.T) {
 				constants.IsoUsd_IsolatedMarket,
 			},
 			expectedSubaccounts: []satypes.Subaccount{
-				testutil.ChangeUsdcBalance(constants.Alice_Num0_1ISO_LONG_10_000USD, -100_000_000),
-				testutil.ChangeUsdcBalance(constants.Bob_Num0_1ISO_LONG_10_000USD, 100_000_000),
+				withPerpetualAccountType(testutil.ChangeUsdcBalance(constants.Alice_Num0_1ISO_LONG_10_000USD, -100_000_000)),
+				withPerpetualAccountType(testutil.ChangeUsdcBalance(constants.Bob_Num0_1ISO_LONG_10_000USD, 100_000_000)),
 			},
 			expectedCollateralPoolBalances: map[string]int64{
 				authtypes.NewModuleAddress(

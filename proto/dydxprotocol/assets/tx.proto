@@ -1,13 +1,43 @@
 syntax = "proto3";
 package dydxprotocol.assets;
 
-// this line is used by starport scaffolding # proto/tx/import
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "gogoproto/gogo.proto";
+import "dydxprotocol/assets/asset.proto";
+import "dydxprotocol/assets/asset_policy.proto";
 
 option go_package = "github.com/dydxprotocol/v4-chain/protocol/x/assets/types";
 
 // Msg defines the Msg service.
 service Msg {
-  // this line is used by starport scaffolding # proto/tx/rpc
+  // CreateAsset registers an asset and its initial policy.
+  rpc CreateAsset(MsgCreateAsset) returns (MsgCreateAssetResponse);
+
+  // UpdateAssetPolicy updates the mutable policy for an existing asset.
+  rpc UpdateAssetPolicy(MsgUpdateAssetPolicy)
+      returns (MsgUpdateAssetPolicyResponse);
 }
 
-// this line is used by starport scaffolding # proto/tx/message
+// MsgCreateAsset registers an asset and its initial policy.
+message MsgCreateAsset {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  Asset asset = 2 [ (gogoproto.nullable) = false ];
+  AssetPolicy policy = 3 [ (gogoproto.nullable) = false ];
+}
+
+// MsgCreateAssetResponse defines the CreateAsset response.
+message MsgCreateAssetResponse {}
+
+// MsgUpdateAssetPolicy updates the mutable policy for an existing asset.
+message MsgUpdateAssetPolicy {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  AssetPolicy policy = 2 [ (gogoproto.nullable) = false ];
+}
+
+// MsgUpdateAssetPolicyResponse defines the UpdateAssetPolicy response.
+message MsgUpdateAssetPolicyResponse {}

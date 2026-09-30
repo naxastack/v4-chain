@@ -80,6 +80,24 @@ var (
 		ModuleName, 500, "asset transfer quantums is not positive")
 	ErrAssetTransferThroughBankNotImplemented = errorsmod.Register(
 		ModuleName, 501, "asset transfer (other than USDC) through the bank module is not implemented")
+	ErrTypedTransferSubaccountNotFound = errorsmod.Register(
+		ModuleName, 502, "typed transfer subaccount does not exist")
+	ErrTypedTransferOwnerMismatch = errorsmod.Register(
+		ModuleName, 503, "typed transfers require the same owner")
+	ErrTypedTransferRouteNotAllowed = errorsmod.Register(
+		ModuleName, 504, "typed transfer route is not allowed")
+	ErrTypedTransferMappingInvalid = errorsmod.Register(
+		ModuleName, 505, "typed transfer account mapping is invalid")
+	ErrFundingSubaccountNotFound = errorsmod.Register(
+		ModuleName, 506, "funding subaccount does not exist")
+	ErrFundingSubaccountRequired = errorsmod.Register(
+		ModuleName, 507, "bank transfer requires a funding subaccount")
+	ErrFundingDepositOwnerMismatch = errorsmod.Register(
+		ModuleName, 508, "deposit sender must match the funding subaccount owner")
+	ErrSpotOrderEpochOverflow = errorsmod.Register(
+		ModuleName, 509, "spot order epoch overflow")
+	ErrGenesisSpotOrderEpochInvalid = errorsmod.Register(
+		ModuleName, 510, "genesis spot order epoch is invalid")
 
 	// 600 - 699: safety heap related.
 	ErrSafetyHeapEmpty                     = errorsmod.Register(ModuleName, 600, "safety heap is empty")

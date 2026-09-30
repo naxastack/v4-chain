@@ -36,6 +36,9 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, cursor := range genState.BusinessNumberCursors {
 		k.SetNextBusinessSubaccountNumber(ctx, cursor.Owner, cursor.NextNumber)
 	}
+	for _, epoch := range genState.SpotOrderEpochs {
+		k.SetSpotOrderEpoch(ctx, *epoch.SubaccountId, epoch.AssetId, epoch.Epoch)
+	}
 }
 
 // ExportGenesis returns the subaccounts module's exported genesis.
@@ -50,6 +53,10 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	cursors := k.GetAllNextBusinessSubaccountNumbers(ctx)
 	if len(cursors) > 0 {
 		genesis.BusinessNumberCursors = cursors
+	}
+	spotOrderEpochs := k.GetAllSpotOrderEpochs(ctx)
+	if len(spotOrderEpochs) > 0 {
+		genesis.SpotOrderEpochs = spotOrderEpochs
 	}
 
 	return genesis

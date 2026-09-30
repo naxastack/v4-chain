@@ -81,49 +81,44 @@ func (k Keeper) ProcessDepositToSubaccount(
 	ctx sdk.Context,
 	msgDepositToSubaccount *types.MsgDepositToSubaccount,
 ) (err error) {
-	// Emit metric on latency.
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), metrics.ProcessDepositToSubaccount,
 		metrics.Latency)
 
-	// Convert sender address string to an sdk.AccAddress.
 	senderAccAddress, err := sdk.AccAddressFromBech32(msgDepositToSubaccount.Sender)
 	if err != nil {
 		return err
 	}
 
-	// Invoke account-to-subaccount transfer keeper method in subaccounts.
-	err = k.subaccountsKeeper.DepositFundsFromAccountToSubaccount(
-		ctx,
+	cacheCtx, write := ctx.CacheContext()
+	if err := k.subaccountsKeeper.DepositFundsToFundingAccount(
+		cacheCtx,
 		senderAccAddress,
 		msgDepositToSubaccount.Recipient,
 		msgDepositToSubaccount.AssetId,
 		new(big.Int).SetUint64(msgDepositToSubaccount.Quantums),
-	)
-
-	// Emit gauge metric with labels if deposit to subaccount succeeds.
-	if err == nil {
-		metrics.EmitTelemetryWithLabelsForExecMode(
-			ctx,
-			// sdk.ExecModeFinalize is used here to ensure metrics are only emitted in the Finalize ExecMode.
-			[]sdk.ExecMode{sdk.ExecModeFinalize},
-			metrics.SetGaugeWithLabels,
-			metrics.SendingProcessDepositToSubaccount,
-			float32(msgDepositToSubaccount.Quantums),
-			metrics.GetLabelForIntValue(metrics.AssetId, int(msgDepositToSubaccount.AssetId)),
-		)
-
-		// Add deposit event to Indexer block message.
-		k.GetIndexerEventManager().AddTxnEvent(
-			ctx,
-			indexerevents.SubtypeTransfer,
-			indexerevents.TransferEventVersion,
-			indexer_manager.GetBytes(
-				k.GenerateDepositEvent(msgDepositToSubaccount),
-			),
-		)
+	); err != nil {
+		return err
 	}
 
-	return err
+	k.GetIndexerEventManager().AddTxnEvent(
+		cacheCtx,
+		indexerevents.SubtypeTransfer,
+		indexerevents.TransferEventVersion,
+		indexer_manager.GetBytes(
+			k.GenerateDepositEvent(msgDepositToSubaccount),
+		),
+	)
+	write()
+
+	metrics.EmitTelemetryWithLabelsForExecMode(
+		ctx,
+		[]sdk.ExecMode{sdk.ExecModeFinalize},
+		metrics.SetGaugeWithLabels,
+		metrics.SendingProcessDepositToSubaccount,
+		float32(msgDepositToSubaccount.Quantums),
+		metrics.GetLabelForIntValue(metrics.AssetId, int(msgDepositToSubaccount.AssetId)),
+	)
+	return nil
 }
 
 // GenerateDepositEvent takes in a deposit and returns a deposit event.
@@ -144,50 +139,46 @@ func (k Keeper) ProcessWithdrawFromSubaccount(
 	ctx sdk.Context,
 	msgWithdrawFromSubaccount *types.MsgWithdrawFromSubaccount,
 ) (err error) {
-	// Emit metric on latency.
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), metrics.ProcessWithdrawFromSubaccount,
 		metrics.Latency)
 
-	// Convert recipient address string to an sdk.AccAddress.
 	recipientAccAddress, err := sdk.AccAddressFromBech32(msgWithdrawFromSubaccount.Recipient)
 	if err != nil {
 		return err
 	}
 
-	// Invoke subaccount-to-account transfer keeper method in subaccounts.
-	err = k.subaccountsKeeper.WithdrawFundsFromSubaccountToAccount(
-		ctx,
+	cacheCtx, write := ctx.CacheContext()
+	if err := k.subaccountsKeeper.WithdrawFundsFromFundingAccount(
+		cacheCtx,
 		msgWithdrawFromSubaccount.Sender,
 		recipientAccAddress,
 		msgWithdrawFromSubaccount.AssetId,
 		new(big.Int).SetUint64(msgWithdrawFromSubaccount.Quantums),
-	)
-
-	// Emit gauge metric with labels if withdrawal from subaccount succeeds.
-	if err == nil {
-		telemetry.SetGaugeWithLabels(
-			[]string{
-				types.ModuleName,
-				metrics.ProcessWithdrawFromSubaccount,
-			},
-			float32(msgWithdrawFromSubaccount.Quantums),
-			[]gometrics.Label{
-				metrics.GetLabelForIntValue(metrics.AssetId, int(msgWithdrawFromSubaccount.AssetId)),
-			},
-		)
-
-		// Add withdraw event to Indexer block message.
-		k.GetIndexerEventManager().AddTxnEvent(
-			ctx,
-			indexerevents.SubtypeTransfer,
-			indexerevents.TransferEventVersion,
-			indexer_manager.GetBytes(
-				k.GenerateWithdrawEvent(msgWithdrawFromSubaccount),
-			),
-		)
+	); err != nil {
+		return err
 	}
 
-	return err
+	k.GetIndexerEventManager().AddTxnEvent(
+		cacheCtx,
+		indexerevents.SubtypeTransfer,
+		indexerevents.TransferEventVersion,
+		indexer_manager.GetBytes(
+			k.GenerateWithdrawEvent(msgWithdrawFromSubaccount),
+		),
+	)
+	write()
+
+	telemetry.SetGaugeWithLabels(
+		[]string{
+			types.ModuleName,
+			metrics.ProcessWithdrawFromSubaccount,
+		},
+		float32(msgWithdrawFromSubaccount.Quantums),
+		[]gometrics.Label{
+			metrics.GetLabelForIntValue(metrics.AssetId, int(msgWithdrawFromSubaccount.AssetId)),
+		},
+	)
+	return nil
 }
 
 // GenerateWithdrawEvent takes in a withdrawal and returns a withdraw event.

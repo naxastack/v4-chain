@@ -1,0 +1,33 @@
+syntax = "proto3";
+package dydxprotocol.assets;
+
+option go_package = "github.com/dydxprotocol/v4-chain/protocol/x/assets/types";
+
+// AssetPolicyStatus defines the lifecycle state of an asset policy.
+enum AssetPolicyStatus {
+  // Unspecified is not a valid persisted policy state.
+  ASSET_POLICY_STATUS_UNSPECIFIED = 0;
+  // Active permits operations enabled by the policy flags.
+  ASSET_POLICY_STATUS_ACTIVE = 1;
+  // Paused blocks new deposits and trading while preserving withdrawals.
+  ASSET_POLICY_STATUS_PAUSED = 2;
+  // Retired permanently blocks new deposits and trading while preserving
+  // withdrawals.
+  ASSET_POLICY_STATUS_RETIRED = 3;
+}
+
+// AssetPolicy defines the mutable business permissions for an asset.
+message AssetPolicy {
+  // AssetId identifies the immutable Asset governed by this policy.
+  uint32 asset_id = 1;
+  // Status is the lifecycle state of the policy.
+  AssetPolicyStatus status = 2;
+  // DepositsEnabled permits new bank-to-funding deposits while active.
+  bool deposits_enabled = 3;
+  // WithdrawalsEnabled permits funding-to-bank withdrawals.
+  bool withdrawals_enabled = 4;
+  // SpotTradingEnabled permits spot transfers, orders, and fills while active.
+  bool spot_trading_enabled = 5;
+  // PerpetualEnabled permits use by existing perpetual asset paths.
+  bool perpetual_enabled = 6;
+}

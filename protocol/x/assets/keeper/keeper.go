@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dydxprotocol/v4-chain/protocol/indexer/indexer_manager"
+	"github.com/dydxprotocol/v4-chain/protocol/lib"
 	"github.com/dydxprotocol/v4-chain/protocol/x/assets/types"
 )
 
@@ -17,6 +18,7 @@ type (
 		storeKey            storetypes.StoreKey
 		pricesKeeper        types.PricesKeeper
 		indexerEventManager indexer_manager.IndexerEventManager
+		authorities         map[string]struct{}
 	}
 )
 
@@ -25,13 +27,21 @@ func NewKeeper(
 	storeKey storetypes.StoreKey,
 	pricesKeeper types.PricesKeeper,
 	indexerEventManager indexer_manager.IndexerEventManager,
+	authorities []string,
 ) *Keeper {
 	return &Keeper{
 		cdc:                 cdc,
 		storeKey:            storeKey,
 		pricesKeeper:        pricesKeeper,
 		indexerEventManager: indexerEventManager,
+		authorities:         lib.UniqueSliceToSet(authorities),
 	}
+}
+
+// HasAuthority returns whether an address may execute governance asset messages.
+func (k Keeper) HasAuthority(authority string) bool {
+	_, exists := k.authorities[authority]
+	return exists
 }
 
 func (k Keeper) GetIndexerEventManager() indexer_manager.IndexerEventManager {

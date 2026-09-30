@@ -122,6 +122,9 @@ func createAssetsKeeper(
 		storeKey,
 		pk,
 		mockIndexerEventsManager,
+		[]string{
+			constants.GovAuthority,
+		},
 	)
 
 	return k, storeKey

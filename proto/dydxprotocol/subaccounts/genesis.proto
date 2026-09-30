@@ -14,6 +14,8 @@ message GenesisState {
   repeated TypedSubaccount typed_subaccounts = 2 [ (gogoproto.nullable) = false ];
   // Next monotonic business subaccount number for each owner.
   repeated BusinessSubaccountNumberCursor business_number_cursors = 3 [ (gogoproto.nullable) = false ];
+  // Persisted short-term order epochs for SPOT payment assets.
+  repeated SpotOrderEpoch spot_order_epochs = 4 [ (gogoproto.nullable) = false ];
 }
 
 // TypedSubaccount records the unique owner/type mapping.
@@ -27,4 +29,11 @@ message TypedSubaccount {
 message BusinessSubaccountNumberCursor {
   string owner = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
   uint32 next_number = 2;
+}
+
+// SpotOrderEpoch records the current signed-order version for a SPOT asset.
+message SpotOrderEpoch {
+  SubaccountId subaccount_id = 1;
+  uint32 asset_id = 2;
+  uint64 epoch = 3;
 }

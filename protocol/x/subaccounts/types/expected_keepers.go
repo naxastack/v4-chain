@@ -29,6 +29,7 @@ type AssetsKeeper interface {
 		coin sdk.Coin,
 		err error,
 	)
+	ValidateAssetForDeposit(ctx sdk.Context, assetId uint32) error
 	GetAsset(
 		ctx sdk.Context,
 		id uint32,
@@ -36,6 +37,9 @@ type AssetsKeeper interface {
 		val assettypes.Asset,
 		exists bool,
 	)
+	ValidateAssetForWithdrawal(ctx sdk.Context, assetId uint32) error
+	ValidateAssetForSpotTrading(ctx sdk.Context, assetId uint32) error
+	ValidateAssetForPerpetual(ctx sdk.Context, assetId uint32) error
 }
 
 type PerpetualsKeeper interface {

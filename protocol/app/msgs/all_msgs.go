@@ -162,6 +162,12 @@ var (
 		"/dydxprotocol.affiliates.MsgUpdateAffiliateOverrides":          {},
 		"/dydxprotocol.affiliates.MsgUpdateAffiliateOverridesResponse":  {},
 
+		// assets
+		"/dydxprotocol.assets.MsgCreateAsset":               {},
+		"/dydxprotocol.assets.MsgCreateAssetResponse":       {},
+		"/dydxprotocol.assets.MsgUpdateAssetPolicy":         {},
+		"/dydxprotocol.assets.MsgUpdateAssetPolicyResponse": {},
+
 		// accountplus
 		"/dydxprotocol.accountplus.MsgAddAuthenticator":            {},
 		"/dydxprotocol.accountplus.MsgAddAuthenticatorResponse":    {},

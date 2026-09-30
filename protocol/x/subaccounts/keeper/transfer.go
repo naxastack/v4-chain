@@ -99,11 +99,27 @@ func (k Keeper) DepositFundsFromAccountToSubaccount(
 	assetId uint32,
 	quantums *big.Int,
 ) error {
-	// TODO(DEC-715): Support non-USDC assets.
-	if assetId != assettypes.AssetUsdc.Id {
+	return k.depositFundsFromAccountToSubaccount(
+		ctx,
+		fromAccount,
+		toSubaccountId,
+		assetId,
+		quantums,
+		false,
+	)
+}
+
+func (k Keeper) depositFundsFromAccountToSubaccount(
+	ctx sdk.Context,
+	fromAccount sdk.AccAddress,
+	toSubaccountId types.SubaccountId,
+	assetId uint32,
+	quantums *big.Int,
+	allowNonUsdc bool,
+) error {
+	if !allowNonUsdc && assetId != assettypes.AssetUsdc.Id {
 		return types.ErrAssetTransferThroughBankNotImplemented
 	}
-
 	if quantums.Sign() <= 0 {
 		return errorsmod.Wrap(types.ErrAssetTransferQuantumsNotPositive, lib.UintToString(assetId))
 	}
@@ -162,11 +178,27 @@ func (k Keeper) WithdrawFundsFromSubaccountToAccount(
 	assetId uint32,
 	quantums *big.Int,
 ) error {
-	// TODO(DEC-715): Support non-USDC assets.
-	if assetId != assettypes.AssetUsdc.Id {
+	return k.withdrawFundsFromSubaccountToAccount(
+		ctx,
+		fromSubaccountId,
+		toAccount,
+		assetId,
+		quantums,
+		false,
+	)
+}
+
+func (k Keeper) withdrawFundsFromSubaccountToAccount(
+	ctx sdk.Context,
+	fromSubaccountId types.SubaccountId,
+	toAccount sdk.AccAddress,
+	assetId uint32,
+	quantums *big.Int,
+	allowNonUsdc bool,
+) error {
+	if !allowNonUsdc && assetId != assettypes.AssetUsdc.Id {
 		return types.ErrAssetTransferThroughBankNotImplemented
 	}
-
 	if quantums.Sign() <= 0 {
 		return errorsmod.Wrap(types.ErrAssetTransferQuantumsNotPositive, lib.UintToString(assetId))
 	}
@@ -493,8 +525,25 @@ func (k Keeper) TransferFundsFromSubaccountToSubaccount(
 	assetId uint32,
 	quantums *big.Int,
 ) error {
-	// TODO(DEC-715): Support non-USDC assets.
-	if assetId != assettypes.AssetUsdc.Id {
+	if quantums.Sign() <= 0 {
+		return errorsmod.Wrap(types.ErrAssetTransferQuantumsNotPositive, lib.UintToString(assetId))
+	}
+
+	cacheCtx, write := ctx.CacheContext()
+	typedTransfer, err := k.validateTypedTransfer(
+		cacheCtx,
+		senderSubaccountId,
+		recipientSubaccountId,
+		assetId,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Preserve the existing perpetual transfer restriction until the risk
+	// engine supports non-USDC collateral. Typed routes are policy-validated
+	// above and will still pass through the same risk checks below.
+	if !typedTransfer && assetId != assettypes.AssetUsdc.Id {
 		return types.ErrAssetTransferThroughBankNotImplemented
 	}
 
@@ -503,7 +552,7 @@ func (k Keeper) TransferFundsFromSubaccountToSubaccount(
 			SubaccountId: senderSubaccountId,
 			AssetUpdates: []types.AssetUpdate{
 				{
-					AssetId:          assettypes.AssetUsdc.Id,
+					AssetId:          assetId,
 					BigQuantumsDelta: new(big.Int).Neg(quantums),
 				},
 			},
@@ -512,13 +561,13 @@ func (k Keeper) TransferFundsFromSubaccountToSubaccount(
 			SubaccountId: recipientSubaccountId,
 			AssetUpdates: []types.AssetUpdate{
 				{
-					AssetId:          assettypes.AssetUsdc.Id,
+					AssetId:          assetId,
 					BigQuantumsDelta: new(big.Int).Set(quantums),
 				},
 			},
 		},
 	}
-	success, successPerUpdate, err := k.CanUpdateSubaccounts(ctx, updates, types.Transfer)
+	success, successPerUpdate, err := k.CanUpdateSubaccounts(cacheCtx, updates, types.Transfer)
 	if err != nil {
 		return err
 	}
@@ -526,31 +575,30 @@ func (k Keeper) TransferFundsFromSubaccountToSubaccount(
 		return err
 	}
 
-	_, coinToTransfer, err := k.assetsKeeper.ConvertAssetToCoin(
-		ctx,
-		assetId,
-		quantums,
-	)
+	senderCollateralPoolAddr, err := k.GetCollateralPoolForSubaccount(cacheCtx, senderSubaccountId)
 	if err != nil {
 		return err
 	}
 
-	senderCollateralPoolAddr, err := k.GetCollateralPoolForSubaccount(ctx, senderSubaccountId)
-	if err != nil {
-		return err
-	}
-
-	recipientCollateralPoolAddr, err := k.GetCollateralPoolForSubaccount(ctx, recipientSubaccountId)
+	recipientCollateralPoolAddr, err := k.GetCollateralPoolForSubaccount(cacheCtx, recipientSubaccountId)
 	if err != nil {
 		return err
 	}
 
 	// Different collateral pool address, need to do a bank send.
 	if !senderCollateralPoolAddr.Equals(recipientCollateralPoolAddr) {
+		_, coinToTransfer, err := k.assetsKeeper.ConvertAssetToCoin(
+			cacheCtx,
+			assetId,
+			quantums,
+		)
+		if err != nil {
+			return err
+		}
 		// Use SendCoins API instead of SendCoinsFromModuleToModule since we don't need the
 		// module account feature
 		if err := k.bankKeeper.SendCoins(
-			ctx,
+			cacheCtx,
 			senderCollateralPoolAddr,
 			recipientCollateralPoolAddr,
 			[]sdk.Coin{coinToTransfer},
@@ -560,11 +608,23 @@ func (k Keeper) TransferFundsFromSubaccountToSubaccount(
 	}
 
 	// Apply subaccount updates.
-	return k.applyValidSubaccountUpdateForTransfer(
-		ctx,
+	if err := k.applyValidSubaccountUpdateForTransfer(
+		cacheCtx,
 		updates,
 		types.Transfer,
-	)
+	); err != nil {
+		return err
+	}
+	if typedTransfer {
+		sender := k.GetSubaccount(cacheCtx, senderSubaccountId)
+		if sender.AccountType == types.AccountType_ACCOUNT_TYPE_SPOT {
+			if _, err := k.IncrementSpotOrderEpoch(cacheCtx, senderSubaccountId, assetId); err != nil {
+				return err
+			}
+		}
+	}
+	write()
+	return nil
 }
 
 // TransferIsolatedInsuranceFundToCross transfers the full balance of an isolated perpetual's

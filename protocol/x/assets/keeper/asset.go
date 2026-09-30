@@ -25,6 +25,23 @@ func (k Keeper) CreateAsset(
 	marketId uint32,
 	atomicResolution int32,
 ) (types.Asset, error) {
+	if err := sdk.ValidateDenom(denom); err != nil {
+		return types.Asset{}, errorsmod.Wrap(types.ErrInvalidAssetDenom, err.Error())
+	}
+	if lib.AbsInt32(denomExponent) > types.MaxAssetUnitExponentAbs {
+		return types.Asset{}, errorsmod.Wrapf(
+			types.ErrInvalidDenomExponent,
+			"denom exponent = %d",
+			denomExponent,
+		)
+	}
+	if lib.AbsInt32(atomicResolution) > types.MaxAssetUnitExponentAbs {
+		return types.Asset{}, errorsmod.Wrapf(
+			types.ErrInvalidAssetAtomicResolution,
+			"atomic resolution = %d",
+			atomicResolution,
+		)
+	}
 	if prevAsset, exists := k.GetAsset(ctx, assetId); exists {
 		return types.Asset{}, errorsmod.Wrapf(
 			types.ErrAssetIdAlreadyExists,

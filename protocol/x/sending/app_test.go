@@ -99,12 +99,11 @@ func TestMsgCreateTransfer(t *testing.T) {
 			deliverTxFails:        true,
 		},
 		"Failure: transfer a non-USDC asset": {
-			senderSubaccountId:      constants.Alice_Num0,
-			recipientSubaccountId:   constants.Alice_Num1,
-			asset:                   *constants.BtcUsd, // non-USDC asset
-			amount:                  7_000_000,
-			checkTxResponseContains: "Non-USDC asset transfer not implemented",
-			checkTxFails:            true,
+			senderSubaccountId:    constants.Alice_Num0,
+			recipientSubaccountId: constants.Alice_Num1,
+			asset:                 *constants.BtcUsd, // non-USDC asset
+			amount:                7_000_000,
+			deliverTxFails:        true,
 		},
 		"Failure: transfer zero amount": {
 			senderSubaccountId:      constants.Alice_Num0,
@@ -195,7 +194,7 @@ func TestMsgCreateTransfer(t *testing.T) {
 				tApp.App,
 				testapp.MustMakeCheckTxOptions{
 					AccAddressForSigning: msgCreateTransfer.Transfer.Sender.Owner,
-					Gas:                  100_000,
+					Gas:                  150_000,
 					FeeAmt:               constants.TestFeeCoins_5Cents,
 				},
 				&msgCreateTransfer,
@@ -345,50 +344,67 @@ func TestMsgDepositToSubaccount(t *testing.T) {
 		// Asset to transfer.
 		asset assetstypes.Asset
 
+		// Whether the recipient is configured as the owner's canonical FUNDING subaccount.
+		fundingSubaccountExists bool
+
 		/* Expectations */
 		// A string that CheckTx response should contain, if any.
 		checkTxResponseContains string
 
 		// Whether CheckTx errors.
 		checkTxIsError bool
+
+		// A string that DeliverTx response should contain, if any.
+		deliverTxResponseContains string
+
+		// Whether DeliverTx errors.
+		deliverTxIsError bool
 	}{
 		"Deposit from Alice account to Alice subaccount": {
-			accountAccAddress: constants.AliceAccAddress,
-			subaccountId:      constants.Alice_Num0,
-			quantums:          big.NewInt(500_000_000),
-			asset:             *constants.Usdc,
+			accountAccAddress:       constants.AliceAccAddress,
+			subaccountId:            constants.Alice_Num0,
+			quantums:                big.NewInt(500_000_000),
+			asset:                   *constants.Usdc,
+			fundingSubaccountExists: true,
 		},
 		"Deposit from Bob account to Carl subaccount": {
-			accountAccAddress: constants.BobAccAddress,
-			subaccountId:      constants.Carl_Num0,
-			quantums:          big.NewInt(7_000_000),
-			asset:             *constants.Usdc,
+			accountAccAddress:         constants.BobAccAddress,
+			subaccountId:              constants.Carl_Num0,
+			quantums:                  big.NewInt(7_000_000),
+			asset:                     *constants.Usdc,
+			fundingSubaccountExists:   true,
+			deliverTxResponseContains: "deposit sender must match the funding subaccount owner",
+			deliverTxIsError:          true,
 		},
-		// Deposit to a non-existent subaccount will create that subaccount and succeed.
+		// Deposits must not create a FUNDING subaccount implicitly.
 		"Deposit from Bob account to non-existent subaccount": {
 			accountAccAddress: constants.BobAccAddress,
 			subaccountId: satypes.SubaccountId{
 				Owner:  constants.BobAccAddress.String(),
 				Number: 104,
 			},
-			quantums: big.NewInt(7_000_000),
-			asset:    *constants.Usdc,
+			quantums:                  big.NewInt(7_000_000),
+			asset:                     *constants.Usdc,
+			deliverTxResponseContains: "funding subaccount does not exist",
+			deliverTxIsError:          true,
 		},
-		"Deposit a non-USDC asset": {
-			accountAccAddress:       constants.AliceAccAddress,
-			subaccountId:            constants.Carl_Num0,
-			quantums:                big.NewInt(7_000_000),
-			asset:                   *constants.BtcUsd, // non-USDC asset
-			checkTxResponseContains: "Non-USDC asset transfer not implemented",
-			checkTxIsError:          true,
+		"Deposit an unregistered non-USDC asset": {
+			accountAccAddress:         constants.AliceAccAddress,
+			subaccountId:              constants.Alice_Num0,
+			quantums:                  big.NewInt(7_000_000),
+			asset:                     *constants.BtcUsd, // non-USDC asset
+			deliverTxResponseContains: "Asset does not exist",
+			fundingSubaccountExists:   true,
+			deliverTxIsError:          true,
 		},
 		"Deposit zero amount": {
 			accountAccAddress:       constants.AliceAccAddress,
-			subaccountId:            constants.Carl_Num0,
+			subaccountId:            constants.Alice_Num0,
 			quantums:                big.NewInt(0), // 0 quantums
 			asset:                   *constants.Usdc,
 			checkTxResponseContains: "Invalid transfer amount",
 			checkTxIsError:          true,
+			fundingSubaccountExists: true,
 		},
 	}
 
@@ -399,7 +415,11 @@ func TestMsgDepositToSubaccount(t *testing.T) {
 			appOpts := map[string]interface{}{
 				indexer.MsgSenderInstanceForTest: msgSender,
 			}
-			tApp := testapp.NewTestAppBuilder(t).WithNonDeterminismChecksEnabled(false).WithAppOptions(appOpts).Build()
+			appBuilder := testapp.NewTestAppBuilder(t).WithNonDeterminismChecksEnabled(false)
+			if tc.fundingSubaccountExists {
+				appBuilder = withCanonicalFundingSubaccount(t, appBuilder, tc.subaccountId)
+			}
+			tApp := appBuilder.WithAppOptions(appOpts).Build()
 			ctx := tApp.AdvanceToBlock(2, testapp.AdvanceToBlockOptions{})
 			// Clear any messages produced prior to CheckTx calls.
 			msgSender.Clear()
@@ -443,6 +463,27 @@ func TestMsgDepositToSubaccount(t *testing.T) {
 
 			// Check that no indexer events are emitted so far.
 			require.Empty(t, msgSender.GetOnchainMessages())
+			if tc.deliverTxIsError {
+				tApp.AdvanceToBlock(3, testapp.AdvanceToBlockOptions{
+					ValidateFinalizeBlock: func(
+						context sdktypes.Context,
+						request abcitypes.RequestFinalizeBlock,
+						response abcitypes.ResponseFinalizeBlock,
+					) (haltChain bool) {
+						for i, tx := range request.Txs {
+							if bytes.Equal(tx, CheckTx_MsgDepositToSubaccount.Tx) {
+								require.True(t, response.TxResults[i].IsErr())
+								require.Contains(t, response.TxResults[i].Log, tc.deliverTxResponseContains)
+							} else {
+								require.True(t, response.TxResults[i].IsOK())
+							}
+						}
+						return false
+					},
+				})
+				return
+			}
+
 			// Advance to block 3 for transactions to be delivered.
 			ctx = tApp.AdvanceToBlock(3, testapp.AdvanceToBlockOptions{})
 
@@ -548,6 +589,12 @@ func TestMsgWithdrawFromSubaccount(t *testing.T) {
 
 		// Whether CheckTx errors.
 		checkTxIsError bool
+
+		// A string that DeliverTx response should contain, if any.
+		deliverTxResponseContains string
+
+		// Whether DeliverTx errors.
+		deliverTxIsError bool
 	}{
 		"Withdraw from Alice subaccount to Alice account": {
 			accountAccAddress: constants.AliceAccAddress,
@@ -568,13 +615,13 @@ func TestMsgWithdrawFromSubaccount(t *testing.T) {
 			quantums:          big.NewInt(7_000_000),
 			asset:             *constants.Usdc,
 		},
-		"Withdraw a non-USDC asset": {
-			accountAccAddress:       constants.AliceAccAddress,
-			subaccountId:            constants.Carl_Num0,
-			quantums:                big.NewInt(7_000_000),
-			asset:                   *constants.BtcUsd, // non-USDC asset
-			checkTxResponseContains: "Non-USDC asset transfer not implemented",
-			checkTxIsError:          true,
+		"Withdraw an unregistered non-USDC asset": {
+			accountAccAddress:         constants.AliceAccAddress,
+			subaccountId:              constants.Carl_Num0,
+			quantums:                  big.NewInt(7_000_000),
+			asset:                     *constants.BtcUsd, // non-USDC asset
+			deliverTxResponseContains: "Asset does not exist",
+			deliverTxIsError:          true,
 		},
 		"Withdraw zero amount": {
 			accountAccAddress:       constants.AliceAccAddress,
@@ -593,7 +640,12 @@ func TestMsgWithdrawFromSubaccount(t *testing.T) {
 			appOpts := map[string]interface{}{
 				indexer.MsgSenderInstanceForTest: msgSender,
 			}
-			tApp := testapp.NewTestAppBuilder(t).WithAppOptions(appOpts).Build()
+			appBuilder := withCanonicalFundingSubaccount(
+				t,
+				testapp.NewTestAppBuilder(t),
+				tc.subaccountId,
+			)
+			tApp := appBuilder.WithAppOptions(appOpts).Build()
 			ctx := tApp.AdvanceToBlock(2, testapp.AdvanceToBlockOptions{})
 			// Clear any messages produced prior to CheckTx calls.
 			msgSender.Clear()
@@ -637,6 +689,27 @@ func TestMsgWithdrawFromSubaccount(t *testing.T) {
 
 			// Check that no indexer events are emitted so far.
 			require.Empty(t, msgSender.GetOnchainMessages())
+			if tc.deliverTxIsError {
+				tApp.AdvanceToBlock(3, testapp.AdvanceToBlockOptions{
+					ValidateFinalizeBlock: func(
+						context sdktypes.Context,
+						request abcitypes.RequestFinalizeBlock,
+						response abcitypes.ResponseFinalizeBlock,
+					) (haltChain bool) {
+						for i, tx := range request.Txs {
+							if bytes.Equal(tx, CheckTx_MsgWithdrawFromSubaccount.Tx) {
+								require.True(t, response.TxResults[i].IsErr())
+								require.Contains(t, response.TxResults[i].Log, tc.deliverTxResponseContains)
+							} else {
+								require.True(t, response.TxResults[i].IsOK())
+							}
+						}
+						return false
+					},
+				})
+				return
+			}
+
 			// Advance to block 3 for transactions to be delivered.
 			ctx = tApp.AdvanceToBlock(3, testapp.AdvanceToBlockOptions{})
 
@@ -777,6 +850,46 @@ func getSubaccountAssetQuantums(
 	return big.NewInt(0) // by default, subaccount has 0 of this `asset`.
 }
 
+func withCanonicalFundingSubaccount(
+	t *testing.T,
+	appBuilder testapp.TestAppBuilder,
+	id satypes.SubaccountId,
+) testapp.TestAppBuilder {
+	return appBuilder.WithGenesisDocFn(func() (genesis types.GenesisDoc) {
+		genesis = testapp.DefaultGenesis()
+		testapp.UpdateGenesisDocWithAppStateForModule(
+			&genesis,
+			func(genesisState *satypes.GenesisState) {
+				found := false
+				for i := range genesisState.Subaccounts {
+					subaccount := &genesisState.Subaccounts[i]
+					if subaccount.Id != nil && *subaccount.Id == id {
+						subaccount.AccountType = satypes.AccountType_ACCOUNT_TYPE_FUNDING
+						found = true
+						break
+					}
+				}
+				require.True(t, found, "funding subaccount fixture must exist")
+				genesisState.TypedSubaccounts = append(
+					genesisState.TypedSubaccounts,
+					satypes.TypedSubaccount{
+						Owner:        id.Owner,
+						AccountType:  satypes.AccountType_ACCOUNT_TYPE_FUNDING,
+						SubaccountId: &id,
+					},
+				)
+			},
+		)
+		testapp.UpdateGenesisDocWithAppStateForModule(
+			&genesis,
+			func(genesisState *assetstypes.GenesisState) {
+				genesisState.AssetPolicies = []assetstypes.AssetPolicy{assetstypes.AssetPolicyUsdc}
+			},
+		)
+		return genesis
+	})
+}
+
 func TestWithdrawalGating_ChainOutage(t *testing.T) {
 	tests := map[string]struct {
 		// State.
@@ -839,6 +952,7 @@ func TestWithdrawalGating_ChainOutage(t *testing.T) {
 						genesisState.Assets = []assetstypes.Asset{
 							*constants.Usdc,
 						}
+						genesisState.AssetPolicies = []assetstypes.AssetPolicy{assetstypes.AssetPolicyUsdc}
 					},
 				)
 				testapp.UpdateGenesisDocWithAppStateForModule(
@@ -859,7 +973,18 @@ func TestWithdrawalGating_ChainOutage(t *testing.T) {
 				testapp.UpdateGenesisDocWithAppStateForModule(
 					&genesis,
 					func(genesisState *satypes.GenesisState) {
-						genesisState.Subaccounts = []satypes.Subaccount{tc.subaccount}
+						subaccount := tc.subaccount
+						if tc.isWithdrawal {
+							subaccount.AccountType = satypes.AccountType_ACCOUNT_TYPE_FUNDING
+							genesisState.TypedSubaccounts = []satypes.TypedSubaccount{
+								{
+									Owner:        subaccount.Id.Owner,
+									AccountType:  satypes.AccountType_ACCOUNT_TYPE_FUNDING,
+									SubaccountId: subaccount.Id,
+								},
+							}
+						}
+						genesisState.Subaccounts = []satypes.Subaccount{subaccount}
 					},
 				)
 				return genesis

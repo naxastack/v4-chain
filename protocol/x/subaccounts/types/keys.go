@@ -17,6 +17,8 @@ const (
 	TypedSubaccountKeyPrefix = "TA:"
 	// NextBusinessSubaccountNumberKeyPrefix stores the next monotonic business number per owner.
 	NextBusinessSubaccountNumberKeyPrefix = "Next:"
+	// SpotOrderEpochKeyPrefix stores the signed-order version for each SPOT payment asset.
+	SpotOrderEpochKeyPrefix = "SpotEpoch:"
 	// NegativeTncSubaccountForCollateralPoolSeenAtBlockKeyPrefix is the prefix for the store key that
 	// stores the last block a negative TNC subaccount was seen in state for a specific collateral pool.
 	NegativeTncSubaccountForCollateralPoolSeenAtBlockKeyPrefix = "NegSA:"

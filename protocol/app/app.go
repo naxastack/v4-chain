@@ -1027,6 +1027,9 @@ func New(
 		keys[assetsmoduletypes.StoreKey],
 		app.PricesKeeper,
 		app.IndexerEventManager,
+		[]string{
+			lib.GovModuleAddress.String(),
+		},
 	)
 	assetsModule := assetsmodule.NewAppModule(appCodec, app.AssetsKeeper)
 

@@ -37,14 +37,13 @@ func TestMsgDepositToSubaccount_ValidateBasic(t *testing.T) {
 			},
 			err: satypes.ErrInvalidSubaccountIdOwner,
 		},
-		"Non-USDC asset transfer not supported": {
+		"Valid - non-USDC asset admission is stateful": {
 			msg: types.MsgDepositToSubaccount{
 				Sender:    constants.AliceAccAddress.String(),
 				Recipient: constants.Alice_Num0,
 				AssetId:   uint32(1),
 				Quantums:  uint64(100),
 			},
-			err: types.ErrNonUsdcAssetTransferNotImplemented,
 		},
 		"Invalid quantums": {
 			msg: types.MsgDepositToSubaccount{

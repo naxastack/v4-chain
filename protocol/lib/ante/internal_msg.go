@@ -17,6 +17,7 @@ import (
 	ibcconn "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	accountplus "github.com/dydxprotocol/v4-chain/protocol/x/accountplus/types"
 	affiliates "github.com/dydxprotocol/v4-chain/protocol/x/affiliates/types"
+	assets "github.com/dydxprotocol/v4-chain/protocol/x/assets/types"
 	blocktime "github.com/dydxprotocol/v4-chain/protocol/x/blocktime/types"
 	bridge "github.com/dydxprotocol/v4-chain/protocol/x/bridge/types"
 	clob "github.com/dydxprotocol/v4-chain/protocol/x/clob/types"
@@ -75,6 +76,10 @@ func IsInternalMsg(msg sdk.Msg) bool {
 		// ------- Custom modules
 		// accountplus
 		*accountplus.MsgSetActiveState,
+
+		// assets
+		*assets.MsgCreateAsset,
+		*assets.MsgUpdateAssetPolicy,
 
 		// blocktime
 		*blocktime.MsgUpdateDowntimeParams,

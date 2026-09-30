@@ -9,13 +9,21 @@ const (
 )
 
 var (
-	AssetUsdc Asset = Asset{
+	AssetUsdc = Asset{
 		Id:               0,
 		Symbol:           "USDC",
 		DenomExponent:    UusdcDenomExponent,
 		Denom:            UusdcDenom,
 		HasMarket:        false,
 		AtomicResolution: lib.QuoteCurrencyAtomicResolution,
+	}
+	AssetPolicyUsdc = AssetPolicy{
+		AssetId:            AssetUsdc.Id,
+		Status:             AssetPolicyStatus_ASSET_POLICY_STATUS_ACTIVE,
+		DepositsEnabled:    true,
+		WithdrawalsEnabled: true,
+		SpotTradingEnabled: true,
+		PerpetualEnabled:   true,
 	}
 )
 
@@ -25,25 +33,22 @@ func DefaultGenesis() *GenesisState {
 		Assets: []Asset{
 			AssetUsdc,
 		},
+		AssetPolicies: []AssetPolicy{
+			AssetPolicyUsdc,
+		},
 	}
 }
 
 // Validate performs basic genesis state validation returning an error upon any
 // failure.
 func (gs GenesisState) Validate() error {
-	// Genesis state should contain at least one asset.
 	if len(gs.Assets) == 0 {
 		return ErrNoAssetInGenesis
 	}
-
-	// The first asset should always be USDC.
 	if gs.Assets[0] != AssetUsdc {
 		return ErrUsdcMustBeAssetZero
 	}
 
-	// Provided assets should not contain duplicated asset ids, and denoms.
-	// Asset ids should be sequential.
-	// MarketId should be 0 if HasMarket is false.
 	assetIdSet := make(map[uint32]struct{})
 	denomSet := make(map[string]struct{})
 	expectedId := uint32(0)
@@ -63,7 +68,27 @@ func (gs GenesisState) Validate() error {
 		}
 		assetIdSet[asset.Id] = struct{}{}
 		denomSet[asset.Denom] = struct{}{}
-		expectedId = expectedId + 1
+		expectedId++
+	}
+
+	policyIds := make(map[uint32]struct{}, len(gs.AssetPolicies))
+	for _, policy := range gs.AssetPolicies {
+		if _, exists := assetIdSet[policy.AssetId]; !exists {
+			return ErrAssetDoesNotExist
+		}
+		if _, exists := policyIds[policy.AssetId]; exists {
+			return ErrAssetPolicyAlreadyExists
+		}
+		if policy.Status != AssetPolicyStatus_ASSET_POLICY_STATUS_ACTIVE {
+			return ErrInvalidAssetPolicyStatus
+		}
+		if err := ValidateAssetPolicy(policy); err != nil {
+			return err
+		}
+		policyIds[policy.AssetId] = struct{}{}
+	}
+	if len(policyIds) != len(assetIdSet) {
+		return ErrAssetPolicyDoesNotExist
 	}
 	return nil
 }

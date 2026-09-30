@@ -79,6 +79,12 @@ func TestInternalMsgSamples_Gov_Key(t *testing.T) {
 		"/dydxprotocol.affiliates.MsgUpdateAffiliateWhitelist",
 		"/dydxprotocol.affiliates.MsgUpdateAffiliateWhitelistResponse",
 
+		// assets
+		"/dydxprotocol.assets.MsgCreateAsset",
+		"/dydxprotocol.assets.MsgCreateAssetResponse",
+		"/dydxprotocol.assets.MsgUpdateAssetPolicy",
+		"/dydxprotocol.assets.MsgUpdateAssetPolicyResponse",
+
 		// blocktime
 		"/dydxprotocol.blocktime.MsgUpdateDowntimeParams",
 		"/dydxprotocol.blocktime.MsgUpdateDowntimeParamsResponse",

@@ -6,7 +6,7 @@ import (
 	"github.com/dydxprotocol/v4-chain/protocol/x/assets/types"
 )
 
-// InitGenesis initializes the capability module's state from a provided genesis
+// InitGenesis initializes the assets module's state from a provided genesis
 // state.
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	k.InitializeForGenesis(ctx)
@@ -26,11 +26,17 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 			panic(err)
 		}
 	}
+	for _, policy := range genState.AssetPolicies {
+		if err := k.CreateAssetPolicy(ctx, policy); err != nil {
+			panic(err)
+		}
+	}
 }
 
-// ExportGenesis returns the capability module's exported genesis.
+// ExportGenesis returns the assets module's exported genesis.
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 	genesis.Assets = k.GetAllAssets(ctx)
+	genesis.AssetPolicies = k.GetAllAssetPolicies(ctx)
 	return genesis
 }

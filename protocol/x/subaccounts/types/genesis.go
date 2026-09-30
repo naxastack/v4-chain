@@ -2,6 +2,7 @@ package types
 
 import (
 	errorsmod "cosmossdk.io/errors"
+	"github.com/dydxprotocol/v4-chain/protocol/lib"
 )
 
 // DefaultGenesis returns the default Capability genesis state.
@@ -75,6 +76,7 @@ func (gs GenesisState) Validate() error {
 	}
 
 	typedKeys := make(map[string]bool)
+	mappedSpotAccounts := make(map[SubaccountId]bool)
 	for _, mapping := range gs.TypedSubaccounts {
 		if !mapping.AccountType.IsBusinessAccountType() || mapping.SubaccountId == nil {
 			return ErrGenesisTypedAccountInvalid
@@ -90,6 +92,9 @@ func (gs GenesisState) Validate() error {
 		sa, found := accountsByID[*mapping.SubaccountId]
 		if !found || sa.GetId().Owner != mapping.Owner || sa.AccountType != mapping.AccountType {
 			return ErrGenesisTypedAccountInvalid
+		}
+		if mapping.AccountType == AccountType_ACCOUNT_TYPE_SPOT {
+			mappedSpotAccounts[*mapping.SubaccountId] = true
 		}
 	}
 
@@ -109,6 +114,18 @@ func (gs GenesisState) Validate() error {
 			return ErrGenesisBusinessCursorInvalid
 		}
 		cursorOwners[cursor.Owner] = true
+	}
+
+	epochKeys := make(map[string]bool)
+	for _, epoch := range gs.SpotOrderEpochs {
+		if epoch.SubaccountId == nil || epoch.Epoch == 0 || !mappedSpotAccounts[*epoch.SubaccountId] {
+			return ErrGenesisSpotOrderEpochInvalid
+		}
+		key := epoch.SubaccountId.String() + ":" + lib.UintToString(epoch.AssetId)
+		if epochKeys[key] {
+			return ErrGenesisSpotOrderEpochInvalid
+		}
+		epochKeys[key] = true
 	}
 	return nil
 }

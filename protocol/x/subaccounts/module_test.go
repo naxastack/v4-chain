@@ -94,7 +94,7 @@ func TestAppModuleBasic_DefaultGenesis(t *testing.T) {
 	result := am.DefaultGenesis(cdc)
 	json, err := result.MarshalJSON()
 	require.NoError(t, err)
-	require.Equal(t, `{"subaccounts":[],"typed_subaccounts":[],"business_number_cursors":[]}`, string(json))
+	require.Equal(t, `{"subaccounts":[],"typed_subaccounts":[],"business_number_cursors":[],"spot_order_epochs":[]}`, string(json))
 }
 
 func TestAppModuleBasic_ValidateGenesisErrInvalidJSON(t *testing.T) {
@@ -244,7 +244,7 @@ func TestAppModule_InitExportGenesis(t *testing.T) {
 	genesisJson := am.ExportGenesis(ctx, cdc)
 	expected := `{"subaccounts":[{"id":{"owner":"foo","number":127},`
 	expected += `"asset_positions":[{"asset_id":0,"quantums":"1000","index":"0","stateful_reserved_quantums":"0"}],`
-	expected += `"perpetual_positions":[],"margin_enabled":false,"account_type":"ACCOUNT_TYPE_PERPETUAL"}],"typed_subaccounts":[],"business_number_cursors":[]}`
+	expected += `"perpetual_positions":[],"margin_enabled":false,"account_type":"ACCOUNT_TYPE_PERPETUAL"}],"typed_subaccounts":[],"business_number_cursors":[],"spot_order_epochs":[]}`
 	require.Equal(t, expected, string(genesisJson))
 }
 

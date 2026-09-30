@@ -36,6 +36,16 @@ func TestGenesisState_Validate(t *testing.T) {
 						AtomicResolution: int32(-6),
 					},
 				},
+				AssetPolicies: []types.AssetPolicy{
+					types.AssetPolicyUsdc,
+					{
+						AssetId:            1,
+						Status:             types.AssetPolicyStatus_ASSET_POLICY_STATUS_ACTIVE,
+						DepositsEnabled:    true,
+						WithdrawalsEnabled: true,
+						SpotTradingEnabled: true,
+					},
+				},
 			},
 		},
 		"empty genesis state": {

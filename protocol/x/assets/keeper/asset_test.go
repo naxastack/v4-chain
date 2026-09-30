@@ -548,16 +548,9 @@ func TestConvertAssetToCoin_Failure(t *testing.T) {
 		0,
 		-6,
 	)
-	require.NoError(t, err)
+	require.ErrorIs(t, err, types.ErrInvalidDenomExponent)
 
-	_, _, err = keeper.ConvertAssetToCoin(ctx, 1, big.NewInt(100))
-	require.ErrorIs(
-		t,
-		err,
-		types.ErrInvalidDenomExponent,
-	)
-
-	// Test convert asset with invalid denom exponent.
+	// Reject an asset with an invalid atomic resolution at registration.
 	_, err = keeper.CreateAsset(
 		ctx,
 		2,
@@ -568,13 +561,21 @@ func TestConvertAssetToCoin_Failure(t *testing.T) {
 		0,
 		-50, /* invalid asset atomic resolution */
 	)
-	require.NoError(t, err)
-	_, _, err = keeper.ConvertAssetToCoin(ctx, 2, big.NewInt(100))
-	require.ErrorIs(
-		t,
-		err,
-		types.ErrInvalidAssetAtomicResolution,
+	require.ErrorIs(t, err, types.ErrInvalidAssetAtomicResolution)
+
+	// Reject an invalid bank denom at registration.
+	_, err = keeper.CreateAsset(
+		ctx,
+		3,
+		"TEST-SYMBOL-3",
+		"invalid denom",
+		-6,
+		false,
+		0,
+		-6,
 	)
+	require.ErrorIs(t, err, types.ErrInvalidAssetDenom)
+	require.Empty(t, keeper.GetAllAssets(ctx))
 }
 
 func TestIsPositionUpdatable(t *testing.T) {

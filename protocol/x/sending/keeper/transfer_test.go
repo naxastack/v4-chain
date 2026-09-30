@@ -348,8 +348,8 @@ func TestProcessDepositToSubaccount(t *testing.T) {
 			// Set up mock calls.
 			if tc.setUpMocks != nil {
 				mockCall := mockSubaccountsKeeper.On(
-					"DepositFundsFromAccountToSubaccount",
-					ks.Ctx,
+					"DepositFundsToFundingAccount",
+					mock.Anything,
 					sdk.MustAccAddressFromBech32(msg.Sender),
 					msg.Recipient,
 					msg.AssetId,
@@ -433,8 +433,8 @@ func TestProcessWithdrawFromSubaccount(t *testing.T) {
 			// Set up mock calls.
 			if tc.setUpMocks != nil {
 				mockCall := mockSubaccountsKeeper.On(
-					"WithdrawFundsFromSubaccountToAccount",
-					ks.Ctx,
+					"WithdrawFundsFromFundingAccount",
+					mock.Anything,
 					msg.Sender,
 					sdk.MustAccAddressFromBech32(msg.Recipient),
 					msg.AssetId,

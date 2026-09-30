@@ -18,6 +18,7 @@ import (
 	"github.com/dydxprotocol/v4-chain/protocol/testutil/keeper"
 	"github.com/dydxprotocol/v4-chain/protocol/x/assets"
 	assets_keeper "github.com/dydxprotocol/v4-chain/protocol/x/assets/keeper"
+	assets_types "github.com/dydxprotocol/v4-chain/protocol/x/assets/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -66,7 +67,7 @@ func TestAppModuleBasic_RegisterCodecLegacyAmino(t *testing.T) {
 	var buf bytes.Buffer
 	err := cdc.Amino.PrintTypes(&buf)
 	require.NoError(t, err)
-	require.NotContains(t, buf.String(), "Msg") // assets does not support any messages.
+	require.NotContains(t, buf.String(), "Msg") // Assets messages use protobuf service registration.
 }
 
 func TestAppModuleBasic_RegisterInterfaces(t *testing.T) {
@@ -78,7 +79,7 @@ func TestAppModuleBasic_RegisterInterfaces(t *testing.T) {
 	// due to it using an unexported method on the interface thus we use reflection to access the field
 	// directly that contains the registrations.
 	fv := reflect.ValueOf(registry).Elem().FieldByName("implInterfaces")
-	require.Len(t, fv.MapKeys(), 0)
+	require.Len(t, fv.MapKeys(), 4)
 }
 
 func TestAppModuleBasic_DefaultGenesis(t *testing.T) {
@@ -93,7 +94,10 @@ func TestAppModuleBasic_DefaultGenesis(t *testing.T) {
 	expected := `{"assets":[{"id":0,"symbol":"USDC","denom":`
 	expected += `"ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5",`
 	expected += `"denom_exponent":-6,"has_market":false,`
-	expected += `"market_id":0,"atomic_resolution":-6}]}`
+	expected += `"market_id":0,"atomic_resolution":-6}],`
+	expected += `"asset_policies":[{"asset_id":0,"status":"ASSET_POLICY_STATUS_ACTIVE",`
+	expected += `"deposits_enabled":true,"withdrawals_enabled":true,`
+	expected += `"spot_trading_enabled":true,"perpetual_enabled":true}]}`
 	require.Equal(t, expected, string(json))
 }
 
@@ -126,7 +130,10 @@ func TestAppModuleBasic_ValidateGenesis(t *testing.T) {
 
 	msg := `{"assets":[{"id":0,"symbol":"USDC","denom":`
 	msg += `"ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5"`
-	msg += `,"denom_exponent":-6,"has_market":false,"atomic_resolution":-6}]}`
+	msg += `,"denom_exponent":-6,"has_market":false,"atomic_resolution":-6}],`
+	msg += `"asset_policies":[{"asset_id":0,"status":"ASSET_POLICY_STATUS_ACTIVE",`
+	msg += `"deposits_enabled":true,"withdrawals_enabled":true,`
+	msg += `"spot_trading_enabled":true,"perpetual_enabled":true}]}`
 	h := json.RawMessage(msg)
 
 	err := am.ValidateGenesis(cdc, nil, h)
@@ -192,7 +199,10 @@ func TestAppModule_InitExportGenesis(t *testing.T) {
 	cdc := codec.NewProtoCodec(module.InterfaceRegistry)
 	msg := `{"assets":[{"id":0,"symbol":"USDC","denom":`
 	msg += `"ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5",`
-	msg += `"denom_exponent":-6,"has_market":false,"atomic_resolution":-6}]}`
+	msg += `"denom_exponent":-6,"has_market":false,"atomic_resolution":-6}],`
+	msg += `"asset_policies":[{"asset_id":0,"status":"ASSET_POLICY_STATUS_ACTIVE",`
+	msg += `"deposits_enabled":true,"withdrawals_enabled":true,`
+	msg += `"spot_trading_enabled":true,"perpetual_enabled":true}]}`
 	gs := json.RawMessage(msg)
 
 	am.InitGenesis(ctx, cdc, gs)
@@ -209,11 +219,17 @@ func TestAppModule_InitExportGenesis(t *testing.T) {
 	require.Equal(t, uint32(0), assets[0].MarketId)
 	require.Equal(t, int32(-6), assets[0].AtomicResolution)
 
+	policies := keeper.GetAllAssetPolicies(ctx)
+	require.Equal(t, []assets_types.AssetPolicy{assets_types.AssetPolicyUsdc}, policies)
+
 	genesisJson := am.ExportGenesis(ctx, cdc)
 	expected := `{"assets":[{"id":0,"symbol":"USDC","denom":`
 	expected += `"ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5",`
 	expected += `"denom_exponent":-6,"has_market":false,`
-	expected += `"market_id":0,"atomic_resolution":-6}]}`
+	expected += `"market_id":0,"atomic_resolution":-6}],`
+	expected += `"asset_policies":[{"asset_id":0,"status":"ASSET_POLICY_STATUS_ACTIVE",`
+	expected += `"deposits_enabled":true,"withdrawals_enabled":true,`
+	expected += `"spot_trading_enabled":true,"perpetual_enabled":true}]}`
 	require.Equal(t, expected, string(genesisJson))
 }
 

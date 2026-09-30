@@ -45,7 +45,21 @@ type SubaccountsKeeper interface {
 		assetId uint32,
 		amount *big.Int,
 	) (err error)
+	DepositFundsToFundingAccount(
+		ctx sdk.Context,
+		fromAccount sdk.AccAddress,
+		toSubaccountId satypes.SubaccountId,
+		assetId uint32,
+		amount *big.Int,
+	) (err error)
 	WithdrawFundsFromSubaccountToAccount(
+		ctx sdk.Context,
+		fromSubaccountId satypes.SubaccountId,
+		toAccount sdk.AccAddress,
+		assetId uint32,
+		amount *big.Int,
+	) (err error)
+	WithdrawFundsFromFundingAccount(
 		ctx sdk.Context,
 		fromSubaccountId satypes.SubaccountId,
 		toAccount sdk.AccAddress,

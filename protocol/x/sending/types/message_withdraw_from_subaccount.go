@@ -3,7 +3,6 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dydxprotocol/v4-chain/protocol/lib"
-	assettypes "github.com/dydxprotocol/v4-chain/protocol/x/assets/types"
 	satypes "github.com/dydxprotocol/v4-chain/protocol/x/subaccounts/types"
 )
 
@@ -37,11 +36,6 @@ func (msg *MsgWithdrawFromSubaccount) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Recipient)
 	if err != nil {
 		return ErrInvalidAccountAddress
-	}
-
-	// Validate that asset is USDC.
-	if msg.AssetId != assettypes.AssetUsdc.Id {
-		return ErrNonUsdcAssetTransferNotImplemented
 	}
 
 	// Validate that quantums is not zero.

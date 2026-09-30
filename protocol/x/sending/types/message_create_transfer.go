@@ -3,7 +3,6 @@ package types
 import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	assettypes "github.com/dydxprotocol/v4-chain/protocol/x/assets/types"
 )
 
 var _ sdk.Msg = &MsgCreateTransfer{}
@@ -27,10 +26,6 @@ func (msg *MsgCreateTransfer) ValidateBasic() error {
 
 	if msg.Transfer.Sender == msg.Transfer.Recipient {
 		return errorsmod.Wrapf(ErrSenderSameAsRecipient, "Sender is the same as recipient (%s)", &msg.Transfer.Sender)
-	}
-
-	if msg.Transfer.AssetId != assettypes.AssetUsdc.Id {
-		return ErrNonUsdcAssetTransferNotImplemented
 	}
 
 	if msg.Transfer.Amount == uint64(0) {

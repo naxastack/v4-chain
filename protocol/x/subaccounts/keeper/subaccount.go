@@ -698,6 +698,10 @@ func (k Keeper) internalCanUpdateSubaccountsWithLeverage(
 		if err := salib.ValidateSubaccountCandidate(candidate); err != nil {
 			return false, nil, err
 		}
+		if candidate.AccountType.IsBusinessAccountType() {
+			successPerUpdate[i] = types.Success
+			continue
+		}
 
 		// Get the new collateralization and margin requirements with the update applied.
 		riskNew, err := salib.GetRiskForSettledUpdate(u, perpInfos)

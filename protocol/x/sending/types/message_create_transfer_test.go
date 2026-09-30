@@ -88,7 +88,7 @@ func TestMsgCreateTransfer_ValidateBasic(t *testing.T) {
 			err: types.ErrSenderSameAsRecipient,
 		},
 		{
-			name: "Non-USDC asset transfer not supported",
+			name: "Non-USDC asset admission is stateful",
 			msg: types.MsgCreateTransfer{
 				Transfer: &types.Transfer{
 					Sender:    constants.Carl_Num0,
@@ -97,7 +97,6 @@ func TestMsgCreateTransfer_ValidateBasic(t *testing.T) {
 					Amount:    uint64(100),
 				},
 			},
-			err: types.ErrNonUsdcAssetTransferNotImplemented,
 		},
 		{
 			name: "Invalid amount",

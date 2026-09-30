@@ -75,6 +75,42 @@ func (_m *SubaccountsKeeper) DepositFundsFromAccountToSubaccount(ctx types.Conte
 	return r0
 }
 
+// DepositFundsToFundingAccount provides a mock function with given fields: ctx, fromAccount, toSubaccountId, assetId, amount
+func (_m *SubaccountsKeeper) DepositFundsToFundingAccount(ctx types.Context, fromAccount types.AccAddress, toSubaccountId subaccountstypes.SubaccountId, assetId uint32, amount *big.Int) error {
+	ret := _m.Called(ctx, fromAccount, toSubaccountId, assetId, amount)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DepositFundsToFundingAccount")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(types.Context, types.AccAddress, subaccountstypes.SubaccountId, uint32, *big.Int) error); ok {
+		r0 = rf(ctx, fromAccount, toSubaccountId, assetId, amount)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// WithdrawFundsFromFundingAccount provides a mock function with given fields: ctx, fromSubaccountId, toAccount, assetId, amount
+func (_m *SubaccountsKeeper) WithdrawFundsFromFundingAccount(ctx types.Context, fromSubaccountId subaccountstypes.SubaccountId, toAccount types.AccAddress, assetId uint32, amount *big.Int) error {
+	ret := _m.Called(ctx, fromSubaccountId, toAccount, assetId, amount)
+
+	if len(ret) == 0 {
+		panic("no return value specified for WithdrawFundsFromFundingAccount")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(types.Context, subaccountstypes.SubaccountId, types.AccAddress, uint32, *big.Int) error); ok {
+		r0 = rf(ctx, fromSubaccountId, toAccount, assetId, amount)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetAllSubaccount provides a mock function with given fields: ctx
 func (_m *SubaccountsKeeper) GetAllSubaccount(ctx types.Context) []subaccountstypes.Subaccount {
 	ret := _m.Called(ctx)

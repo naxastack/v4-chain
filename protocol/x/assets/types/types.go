@@ -23,10 +23,16 @@ type AssetsKeeper interface {
 	)
 
 	GetAsset(ctx sdk.Context, id uint32) (Asset, bool)
-
 	GetAllAssets(ctx sdk.Context) []Asset
+	GetAssetPolicy(ctx sdk.Context, assetId uint32) (AssetPolicy, bool)
+	GetAllAssetPolicies(ctx sdk.Context) []AssetPolicy
 
 	IsPositionUpdatable(ctx sdk.Context, id uint32) (bool, error)
-
 	ModifyAsset(ctx sdk.Context, id uint32, hasMarket bool, marketId uint32) (Asset, error)
+
+	ValidateAssetDenom(ctx sdk.Context, assetId uint32, denom string) error
+	ValidateAssetForDeposit(ctx sdk.Context, assetId uint32) error
+	ValidateAssetForWithdrawal(ctx sdk.Context, assetId uint32) error
+	ValidateAssetForSpotTrading(ctx sdk.Context, assetId uint32) error
+	ValidateAssetForPerpetual(ctx sdk.Context, assetId uint32) error
 }
