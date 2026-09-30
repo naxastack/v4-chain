@@ -92,6 +92,7 @@ func TestUpdateResultString(t *testing.T) {
 			value:          types.ViolatesIsolatedSubaccountConstraints,
 			expectedResult: "ViolatesIsolatedSubaccountConstraints",
 		},
+
 		"UnexpectedError": {
 			value:          types.UpdateResult(6),
 			expectedResult: "UnexpectedError",
@@ -132,6 +133,7 @@ func TestUpdateResultIsSuccess(t *testing.T) {
 			value:          types.UpdateCausedError,
 			expectedResult: false,
 		},
+
 		"UnexpectedError": {
 			value:          types.UpdateResult(5),
 			expectedResult: false,
@@ -167,6 +169,10 @@ func TestUpdateTypeString(t *testing.T) {
 		"Match": {
 			value:          types.Match,
 			expectedResult: "Match",
+		},
+		"SpotMatch": {
+			value:          types.SpotMatch,
+			expectedResult: "SpotMatch",
 		},
 		"UnexpectedError": {
 			value:          types.UpdateType(999),

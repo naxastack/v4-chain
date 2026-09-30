@@ -214,6 +214,8 @@ var (
 		"/dydxprotocol.clob.MsgUpdateEquityTierLimitConfigurationResponse": {},
 		"/dydxprotocol.clob.MsgUpdateLiquidationsConfig":                   {},
 		"/dydxprotocol.clob.MsgUpdateLiquidationsConfigResponse":           {},
+		"/dydxprotocol.clob.MsgUpdateSpotResourceParams":                   {},
+		"/dydxprotocol.clob.MsgUpdateSpotResourceParamsResponse":           {},
 		"/dydxprotocol.clob.MsgUpdateLeverage":                             {},
 		"/dydxprotocol.clob.MsgUpdateLeverageResponse":                     {},
 
@@ -224,6 +226,8 @@ var (
 		// feetiers
 		"/dydxprotocol.feetiers.MsgUpdatePerpetualFeeParams":           {},
 		"/dydxprotocol.feetiers.MsgUpdatePerpetualFeeParamsResponse":   {},
+		"/dydxprotocol.feetiers.MsgUpdateSpotFeeParams":                {},
+		"/dydxprotocol.feetiers.MsgUpdateSpotFeeParamsResponse":        {},
 		"/dydxprotocol.feetiers.MsgSetMarketFeeDiscountParams":         {},
 		"/dydxprotocol.feetiers.MsgSetMarketFeeDiscountParamsResponse": {},
 		"/dydxprotocol.feetiers.MsgSetStakingTiers":                    {},

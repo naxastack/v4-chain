@@ -112,6 +112,8 @@ func TestInternalMsgSamples_Gov_Key(t *testing.T) {
 		"/dydxprotocol.clob.MsgUpdateEquityTierLimitConfigurationResponse",
 		"/dydxprotocol.clob.MsgUpdateLiquidationsConfig",
 		"/dydxprotocol.clob.MsgUpdateLiquidationsConfigResponse",
+		"/dydxprotocol.clob.MsgUpdateSpotResourceParams",
+		"/dydxprotocol.clob.MsgUpdateSpotResourceParamsResponse",
 
 		// delaymsg
 		"/dydxprotocol.delaymsg.MsgDelayMessage",
@@ -124,6 +126,8 @@ func TestInternalMsgSamples_Gov_Key(t *testing.T) {
 		"/dydxprotocol.feetiers.MsgSetStakingTiersResponse",
 		"/dydxprotocol.feetiers.MsgUpdatePerpetualFeeParams",
 		"/dydxprotocol.feetiers.MsgUpdatePerpetualFeeParamsResponse",
+		"/dydxprotocol.feetiers.MsgUpdateSpotFeeParams",
+		"/dydxprotocol.feetiers.MsgUpdateSpotFeeParamsResponse",
 
 		// govplus
 		"/dydxprotocol.govplus.MsgSlashValidator",

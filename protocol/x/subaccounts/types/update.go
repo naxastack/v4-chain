@@ -131,6 +131,7 @@ const (
 	Deposit
 	Match
 	CollatCheck
+	SpotMatch
 )
 
 var updateTypeStringMap = map[UpdateType]string{
@@ -140,6 +141,7 @@ var updateTypeStringMap = map[UpdateType]string{
 	Deposit:               "Deposit",
 	Match:                 "Match",
 	CollatCheck:           "CollatCheck",
+	SpotMatch:             "SpotMatch",
 }
 
 func (u UpdateType) String() string {

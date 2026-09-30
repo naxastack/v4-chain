@@ -117,6 +117,10 @@ func ValidateSubaccountCandidate(subaccount types.Subaccount) error {
 		if position.GetBigQuantums().Sign() < 0 {
 			return types.ErrBusinessAssetPositionNegative
 		}
+		reserved := position.StatefulReservedQuantums.BigInt()
+		if reserved != nil && (reserved.Sign() < 0 || position.GetBigQuantums().Cmp(reserved) < 0) {
+			return types.ErrStatefulReservedQuantumsInvalid
+		}
 	}
 	return nil
 }
@@ -269,8 +273,9 @@ func CalculateUpdatedAssetPositions(
 			// Update the position.
 			quantums := pos.GetBigQuantums()
 			quantums.Add(quantums, update.GetBigQuantums())
-			if quantums.BitLen() == 0 {
-				// The position is now closed.
+			reserved := pos.StatefulReservedQuantums.BigInt()
+			if quantums.BitLen() == 0 && (reserved == nil || reserved.Sign() == 0) {
+				// The position is now closed and has no reservation metadata to preserve.
 				delete(positionsMap, update.AssetId)
 			} else {
 				pos.Quantums = dtypes.NewIntFromBigInt(quantums)

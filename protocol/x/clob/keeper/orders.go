@@ -867,7 +867,12 @@ func (k Keeper) PerformStatefulOrderValidation(
 		if subaccount.AccountType != satypes.AccountType_ACCOUNT_TYPE_SPOT {
 			return errorsmod.Wrap(types.ErrInvalidPlaceOrder, "spot orders require a spot subaccount")
 		}
-		if err := types.ValidateSpotLongTermOrder(*order, k.feeTiersKeeper.GetSpotFeeParams(ctx).TradingFeePpm); err != nil {
+		spotFeePpm := k.feeTiersKeeper.GetSpotFeeParams(ctx).TradingFeePpm
+		if order.IsStatefulOrder() {
+			if err := types.ValidateSpotLongTermOrder(*order, spotFeePpm); err != nil {
+				return err
+			}
+		} else if err := types.ValidateSpotShortTermOrder(*order, spotFeePpm); err != nil {
 			return err
 		}
 	} else if err := types.ValidatePerpetualOrderSpotFields(*order); err != nil {

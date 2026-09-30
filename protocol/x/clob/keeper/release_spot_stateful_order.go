@@ -35,18 +35,21 @@ func (k Keeper) ReleaseStatefulSpotOrder(ctx sdk.Context, orderId types.OrderId)
 		return errorsmod.Wrap(types.ErrInvalidOrderRemoval, "spot active order count is zero")
 	}
 	amount := reservation.ReservedQuantums.BigInt()
-	if amount == nil || amount.Sign() <= 0 {
-		return errorsmod.Wrap(types.ErrInvalidOrderRemoval, "spot reservation is not positive")
+	if amount == nil || amount.Sign() < 0 ||
+		(amount.Sign() == 0 && reservation.RemainingBaseQuantums != 0) {
+		return errorsmod.Wrap(types.ErrInvalidOrderRemoval, "spot reservation amount is invalid")
 	}
 
 	cacheCtx, write := ctx.CacheContext()
-	if err := k.subaccountsKeeper.ReleaseStatefulSpotQuantums(
-		cacheCtx,
-		orderId.SubaccountId,
-		reservation.OutgoingAssetId,
-		amount,
-	); err != nil {
-		return err
+	if amount.Sign() > 0 {
+		if err := k.subaccountsKeeper.ReleaseStatefulSpotQuantums(
+			cacheCtx,
+			orderId.SubaccountId,
+			reservation.OutgoingAssetId,
+			amount,
+		); err != nil {
+			return err
+		}
 	}
 	k.DeleteStatefulSpotReservation(cacheCtx, reservation)
 	k.setSpotStatefulOrderCount(cacheCtx, orderId.SubaccountId, count-1)

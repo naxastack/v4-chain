@@ -41,6 +41,33 @@ func ValidateSpotLongTermOrder(order Order, currentFeePpm uint32) error {
 	return nil
 }
 
+// ValidateSpotShortTermOrder validates product-specific fields of a spot short-term order.
+func ValidateSpotShortTermOrder(order Order, currentFeePpm uint32) error {
+	if !order.OrderId.IsShortTermOrder() {
+		return errorsmod.Wrap(ErrInvalidPlaceOrder, "spot short-term orders must use short-term order flags")
+	}
+	if order.Quantums == 0 {
+		return errorsmod.Wrap(ErrInvalidOrderQuantums, "spot order quantums cannot be zero")
+	}
+	if order.Subticks == 0 {
+		return errorsmod.Wrap(ErrInvalidOrderSubticks, "spot order subticks cannot be zero")
+	}
+	if order.ReduceOnly || order.ConditionType != Order_CONDITION_TYPE_UNSPECIFIED ||
+		order.ConditionalOrderTriggerSubticks != 0 || order.TwapParameters != nil {
+		return errorsmod.Wrap(ErrInvalidPlaceOrder, "spot short-term order contains unsupported execution fields")
+	}
+	if order.BuilderCodeParameters != nil || order.OrderRouterAddress != "" {
+		return errorsmod.Wrap(ErrInvalidPlaceOrder, "spot short-term order contains unsupported routing or builder fields")
+	}
+	if order.MaxTradingFeePpm == 0 || order.MaxTradingFeePpm < currentFeePpm {
+		return errorsmod.Wrap(ErrInvalidPlaceOrder, "spot trading fee exceeds the signed fee limit")
+	}
+	if order.MaxTradingFeePpm > uint32(lib.OneMillion) {
+		return errorsmod.Wrap(ErrInvalidPlaceOrder, "spot trading fee limit cannot exceed one million ppm")
+	}
+	return nil
+}
+
 // ValidatePerpetualOrderSpotFields rejects spot-only fields on perpetual orders.
 func ValidatePerpetualOrderSpotFields(order Order) error {
 	if order.MaxTradingFeePpm != 0 || order.OrderEpoch != 0 {

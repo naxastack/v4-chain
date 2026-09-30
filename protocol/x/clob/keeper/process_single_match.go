@@ -132,6 +132,20 @@ func (k Keeper) ProcessSingleMatch(
 		)
 	}
 
+	// Split before every perpetual-specific lookup and side effect.
+	if clobPair.GetSpotClobMetadata() != nil {
+		spotFeeParams := k.feeTiersKeeper.GetSpotFeeParams(ctx)
+		settlement, err := types.CalculateSpotMatchSettlement(
+			*matchWithOrders,
+			clobPair,
+			spotFeeParams.TradingFeePpm,
+		)
+		if err != nil {
+			return false, takerUpdateResult, makerUpdateResult, affiliateRevSharesQuoteQuantums, err
+		}
+		return k.processSpotSingleMatch(ctx, matchWithOrders, clobPair, settlement)
+	}
+
 	// Retrieve the associated perpetual id for the `ClobPair`.
 	// TODO(OTE-805): call this outside of ProcessSingleMatch to avoid duplicate calls.
 	perpetualId, err := clobPair.GetPerpetualId()

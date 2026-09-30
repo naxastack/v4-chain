@@ -240,6 +240,22 @@ func (_m *SubaccountsKeeper) GetStreamSubaccountUpdate(ctx types.Context, id sub
 	return r0
 }
 
+// GetSpotOrderEpoch provides a mock function with given fields: ctx, id, assetId
+func (_m *SubaccountsKeeper) GetSpotOrderEpoch(
+	ctx types.Context,
+	id subaccountstypes.SubaccountId,
+	assetId uint32,
+) uint64 {
+	ret := _m.Called(ctx, id, assetId)
+	if len(ret) == 0 {
+		panic("no return value specified for GetSpotOrderEpoch")
+	}
+	if rf, ok := ret.Get(0).(func(types.Context, subaccountstypes.SubaccountId, uint32) uint64); ok {
+		return rf(ctx, id, assetId)
+	}
+	return ret.Get(0).(uint64)
+}
+
 // GetSubaccount provides a mock function with given fields: ctx, id
 func (_m *SubaccountsKeeper) GetSubaccount(ctx types.Context, id subaccountstypes.SubaccountId) subaccountstypes.Subaccount {
 	ret := _m.Called(ctx, id)
@@ -385,6 +401,22 @@ func (_m *SubaccountsKeeper) WithdrawFundsFromSubaccountToAccount(ctx types.Cont
 	}
 
 	return r0
+}
+
+// TransferSpotFees provides a mock function with given fields: ctx, assetId, quantums
+func (_m *SubaccountsKeeper) TransferSpotFees(
+	ctx types.Context,
+	assetId uint32,
+	quantums *big.Int,
+) error {
+	ret := _m.Called(ctx, assetId, quantums)
+	if len(ret) == 0 {
+		panic("no return value specified for TransferSpotFees")
+	}
+	if rf, ok := ret.Get(0).(func(types.Context, uint32, *big.Int) error); ok {
+		return rf(ctx, assetId, quantums)
+	}
+	return ret.Error(0)
 }
 
 // NewSubaccountsKeeper creates a new instance of SubaccountsKeeper. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

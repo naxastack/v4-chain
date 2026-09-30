@@ -571,7 +571,11 @@ var (
 		11003,
 		"Leverage exceeds maximum allowed for perpetual",
 	)
-	ErrInitialMarginPpmIsZero = errorsmod.Register(
+	ErrSpotFeeCapExceeded            = errorsmod.Register(ModuleName, 11005, "spot trading fee exceeds signed fee limit")
+	ErrSpotQuoteNotPositive          = errorsmod.Register(ModuleName, 11006, "spot match quote amount must be positive")
+	ErrSpotSellerNetQuoteNotPositive = errorsmod.Register(ModuleName, 11007, "spot seller net quote amount must be positive")
+	ErrSpotOrderEpochMismatch        = errorsmod.Register(ModuleName, 11008, "spot short-term order epoch does not match chain state")
+	ErrInitialMarginPpmIsZero        = errorsmod.Register(
 		ModuleName,
 		11004,
 		"Initial margin ppm is zero",

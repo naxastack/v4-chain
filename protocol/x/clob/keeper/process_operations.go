@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/dydxprotocol/v4-chain/protocol/lib/log"
 	"github.com/dydxprotocol/v4-chain/protocol/lib/metrics"
 	affiliatetypes "github.com/dydxprotocol/v4-chain/protocol/x/affiliates/types"
+	assettypes "github.com/dydxprotocol/v4-chain/protocol/x/assets/types"
 	"github.com/dydxprotocol/v4-chain/protocol/x/clob/types"
 	satypes "github.com/dydxprotocol/v4-chain/protocol/x/subaccounts/types"
 )
@@ -62,12 +64,22 @@ func (k Keeper) ProcessProposerOperations(
 		log.OperationsQueue, types.GetInternalOperationsQueueTextString(operations))
 
 	// Write results of the operations queue to state. Performs stateful validation as well.
-	if err := k.ProcessInternalOperations(ctx, operations); err != nil {
+	executionResults, err := k.ProcessInternalOperationsWithResults(ctx, operations)
+	if err != nil {
 		return err
 	}
+	appliedOperations := make([]types.InternalOperation, 0, len(executionResults))
+	appliedRawOperations := make([]types.OperationRaw, 0, len(executionResults))
+	for index, result := range executionResults {
+		if result.Status != types.OperationExecutionStatusApplied {
+			continue
+		}
+		appliedOperations = append(appliedOperations, result.Operation)
+		appliedRawOperations = append(appliedRawOperations, rawOperations[index])
+	}
 
-	// Collect the list of order ids filled and set the field in the `ProcessProposerMatchesEvents` object.
-	processProposerMatchesEvents := k.GenerateProcessProposerMatchesEvents(ctx, operations)
+	// Only applied operations can produce fill/removal events or affect downstream cleanup.
+	processProposerMatchesEvents := k.GenerateProcessProposerMatchesEvents(ctx, appliedOperations)
 
 	// Remove fully filled orders from state.
 	for _, orderId := range processProposerMatchesEvents.OrderIdsFilledInLastBlock {
@@ -113,7 +125,7 @@ func (k Keeper) ProcessProposerOperations(
 	)
 
 	// Emit stats about the proposed operations.
-	operationsStats := types.StatMsgProposedOperations(rawOperations)
+	operationsStats := types.StatMsgProposedOperations(appliedRawOperations)
 	operationsStats.EmitStats(metrics.DeliverTx)
 
 	return nil
@@ -133,91 +145,154 @@ func (k Keeper) ProcessInternalOperations(
 	ctx sdk.Context,
 	operations []types.InternalOperation,
 ) error {
-	// Collect all the short-term orders placed for subsequent lookups.
-	// All short term orders in this map have passed validation.
-	placedShortTermOrders := make(map[types.OrderId]types.Order, 0)
+	_, err := k.ProcessInternalOperationsWithResults(ctx, operations)
+	return err
+}
 
-	var affiliateOverrides map[string]bool = nil
+// ProcessInternalOperationsWithResults applies operations in order and returns
+// one deterministic result per operation. Recoverable spot match failures are
+// skipped atomically; all other failures retain the strict legacy behavior.
+func (k Keeper) ProcessInternalOperationsWithResults(
+	ctx sdk.Context,
+	operations []types.InternalOperation,
+) ([]types.OperationExecutionResult, error) {
+	placedShortTermOrders := make(map[types.OrderId]types.Order, 0)
+	results := make([]types.OperationExecutionResult, 0, len(operations))
+
+	var affiliateOverrides map[string]bool
 	var affiliateParameters affiliatetypes.AffiliateParameters
-	// Write the matches to state if all stateful validation passes.
 	for _, operation := range operations {
-		if err := k.validateInternalOperationAgainstClobPairStatus(ctx, operation); err != nil {
-			return err
+		spotMatch := k.isSpotMatchOperation(ctx, operation)
+		operationCtx := ctx
+		var write func()
+		if spotMatch {
+			operationCtx, write = ctx.CacheContext()
 		}
 
-		switch castedOperation := operation.Operation.(type) {
-		case *types.InternalOperation_Match:
-			// check if affiliate whitelist map is nil and initialize it if it is.
-			// This is done to avoid getting whitelist map on list of operations
-			// where there are no matches.
-			if affiliateOverrides == nil {
-				var err error
-				affiliateOverrides, err = k.affiliatesKeeper.GetAffiliateOverridesMap(ctx)
-				if err != nil {
-					return errorsmod.Wrapf(
-						err,
-						"ProcessInternalOperations: Failed to get affiliates whitelist map",
+		operationErr := k.validateInternalOperationAgainstClobPairStatus(operationCtx, operation)
+		if operationErr == nil {
+			switch castedOperation := operation.Operation.(type) {
+			case *types.InternalOperation_Match:
+				if affiliateOverrides == nil {
+					affiliateOverrides, operationErr = k.affiliatesKeeper.GetAffiliateOverridesMap(operationCtx)
+				}
+				if operationErr == nil {
+					affiliateParameters, operationErr = k.affiliatesKeeper.GetAffiliateParameters(operationCtx)
+				}
+				if operationErr == nil {
+					operationErr = k.PersistMatchToState(
+						operationCtx,
+						castedOperation.Match,
+						placedShortTermOrders,
+						affiliateOverrides,
+						affiliateParameters,
 					)
 				}
-			}
-			var err error
-			affiliateParameters, err = k.affiliatesKeeper.GetAffiliateParameters(ctx)
-			if err != nil {
-				return errorsmod.Wrapf(
-					err,
-					"ProcessInternalOperations: Failed to get affiliates parameters",
+			case *types.InternalOperation_ShortTermOrderPlacement:
+				order := castedOperation.ShortTermOrderPlacement.GetOrder()
+				operationErr = k.PerformStatefulOrderValidation(
+					operationCtx,
+					&order,
+					lib.MustConvertIntegerToUint32(operationCtx.BlockHeight()),
+					false,
 				)
-			}
-			clobMatch := castedOperation.Match
-			if err := k.PersistMatchToState(ctx, clobMatch, placedShortTermOrders,
-				affiliateOverrides, affiliateParameters); err != nil {
-				return errorsmod.Wrapf(
-					err,
-					"ProcessInternalOperations: Failed to process clobMatch: %+v",
-					clobMatch,
-				)
-			}
-		case *types.InternalOperation_ShortTermOrderPlacement:
-			order := castedOperation.ShortTermOrderPlacement.GetOrder()
-			if err := k.PerformStatefulOrderValidation(
-				ctx,
-				&order,
-				lib.MustConvertIntegerToUint32(ctx.BlockHeight()),
-				false,
-			); err != nil {
-				return err
-			}
-			placedShortTermOrders[order.GetOrderId()] = order
-		case *types.InternalOperation_OrderRemoval:
-			orderRemoval := castedOperation.OrderRemoval
-
-			if err := k.PersistOrderRemovalToState(ctx, *orderRemoval); err != nil {
-				return errorsmod.Wrapf(
-					types.ErrInvalidOrderRemoval,
-					"Order Removal (%+v) invalid. Error: %+v",
-					*orderRemoval,
-					err,
-				)
-			}
-		case *types.InternalOperation_PreexistingStatefulOrder:
-			// When we fetch operations to propose, preexisting stateful orders are not included
-			// in the operations queue.
-			panic(
-				fmt.Sprintf(
+				if operationErr == nil {
+					placedShortTermOrders[order.GetOrderId()] = order
+				}
+			case *types.InternalOperation_OrderRemoval:
+				operationErr = k.PersistOrderRemovalToState(operationCtx, *castedOperation.OrderRemoval)
+				if operationErr != nil {
+					operationErr = errorsmod.Wrapf(
+						types.ErrInvalidOrderRemoval,
+						"Order Removal (%+v) invalid. Error: %+v",
+						*castedOperation.OrderRemoval,
+						operationErr,
+					)
+				}
+			case *types.InternalOperation_PreexistingStatefulOrder:
+				panic(fmt.Sprintf(
 					"ProcessInternalOperations: Preexisting Stateful Orders should not exist in operations queue: %+v",
 					castedOperation.PreexistingStatefulOrder,
-				),
-			)
-		default:
-			panic(
-				fmt.Sprintf(
+				))
+			default:
+				panic(fmt.Sprintf(
 					"ProcessInternalOperations: Unrecognized operation type for operation: %+v",
 					operation.GetInternalOperationTextString(),
-				),
+				))
+			}
+		}
+
+		if operationErr != nil {
+			if spotMatch {
+				if reason, recoverable := getRecoverableSpotSkipReason(operationErr); recoverable {
+					results = append(results, types.OperationExecutionResult{
+						Operation:  operation,
+						Status:     types.OperationExecutionStatusSkipped,
+						SkipReason: reason,
+					})
+					orderId := castedSpotMatchOrderId(operation)
+					ctx.EventManager().EmitEvent(types.NewSpotOperationSkippedEvent(orderId, reason))
+					continue
+				}
+			}
+			return nil, errorsmod.Wrapf(
+				operationErr,
+				"ProcessInternalOperations: Failed to process operation: %+v",
+				operation.GetInternalOperationTextString(),
 			)
 		}
+		if write != nil {
+			write()
+		}
+		results = append(results, types.OperationExecutionResult{
+			Operation: operation,
+			Status:    types.OperationExecutionStatusApplied,
+		})
 	}
-	return nil
+	return results, nil
+}
+
+func (k Keeper) isSpotMatchOperation(ctx sdk.Context, operation types.InternalOperation) bool {
+	matchOrders := operation.GetMatch().GetMatchOrders()
+	if matchOrders == nil {
+		return false
+	}
+	takerOrderId := matchOrders.GetTakerOrderId()
+	pair, found := k.GetClobPair(ctx, types.ClobPairId(takerOrderId.GetClobPairId()))
+	return found && pair.GetSpotClobMetadata() != nil
+}
+
+func castedSpotMatchOrderId(operation types.InternalOperation) types.OrderId {
+	matchOrders := operation.GetMatch().GetMatchOrders()
+	if matchOrders == nil {
+		panic("castedSpotMatchOrderId called for a non-match operation")
+	}
+	return matchOrders.GetTakerOrderId()
+}
+func getRecoverableSpotSkipReason(err error) (types.SpotOperationSkipReason, bool) {
+	switch {
+	case errors.Is(err, satypes.ErrBusinessAssetPositionNegative),
+		errors.Is(err, satypes.ErrStatefulReservedQuantumsInvalid),
+		errors.Is(err, satypes.ErrFailedToUpdateSubaccounts):
+		return types.SpotOperationSkipReasonInsufficientBalance, true
+	case errors.Is(err, types.ErrSpotOrderEpochMismatch):
+		return types.SpotOperationSkipReasonOrderEpochMismatch, true
+	case errors.Is(err, types.ErrStatefulOrderDoesNotExist),
+		errors.Is(err, satypes.ErrInvalidAccountType):
+		return types.SpotOperationSkipReasonOrderLifecycleInvalid, true
+	case errors.Is(err, types.ErrOperationConflictsWithClobPairStatus):
+		return types.SpotOperationSkipReasonMarketNotTradable, true
+	case errors.Is(err, assettypes.ErrAssetSpotTradingDisabled):
+		return types.SpotOperationSkipReasonAssetNotTradable, true
+	case errors.Is(err, types.ErrSpotFeeCapExceeded):
+		return types.SpotOperationSkipReasonFeeCapExceeded, true
+	case errors.Is(err, types.ErrSpotQuoteNotPositive):
+		return types.SpotOperationSkipReasonQuoteNotPositive, true
+	case errors.Is(err, types.ErrSpotSellerNetQuoteNotPositive):
+		return types.SpotOperationSkipReasonSellerNetQuoteNotPositive, true
+	default:
+		return "", false
+	}
 }
 
 // PersistMatchToState takes in an ClobMatch and writes the match to state. A map of orderId

@@ -10,7 +10,8 @@ import (
 
 // CLOB module event types.
 const (
-	EventTypeMatch = "match"
+	EventTypeMatch                = "match"
+	EventTypeSpotOperationSkipped = "spot_operation_skipped"
 
 	AttributeKeyTakerSubaccount                         = "taker_subaccount"
 	AttributeKeyTakerSubaccountNumber                   = "taker_subaccount_number"
@@ -34,6 +35,9 @@ const (
 	AttributeKeyMakerOrderRouterAddress                 = "maker_order_router_address"
 	AttributeKeyTakerOrderRouterFeeQuoteQuantums        = "taker_order_router_fee_quote_quantums"
 	AttributeKeyMakerOrderRouterFeeQuoteQuantums        = "maker_order_router_fee_quote_quantums"
+	AttributeKeySpotOperationOrderId                    = "order_id"
+	AttributeKeySpotOperationClobPairId                 = "clob_pair_id"
+	AttributeKeySpotOperationSkipReason                 = "reason"
 )
 
 // NewCreateMatchEvent constructs a new match sdk.Event.
@@ -83,5 +87,19 @@ func NewCreateMatchEvent(
 		sdk.NewAttribute(AttributeKeyMakerOrderRouterAddress, makerOrderRouterAddress),
 		sdk.NewAttribute(AttributeKeyTakerOrderRouterFeeQuoteQuantums, takerOrderRouterFeeQuoteQuantums.String()),
 		sdk.NewAttribute(AttributeKeyMakerOrderRouterFeeQuoteQuantums, makerOrderRouterFeeQuoteQuantums.String()),
+	)
+}
+
+// NewSpotOperationSkippedEvent constructs the final SDK event for a
+// deterministically skipped spot match operation.
+func NewSpotOperationSkippedEvent(
+	orderId OrderId,
+	reason SpotOperationSkipReason,
+) sdk.Event {
+	return sdk.NewEvent(
+		EventTypeSpotOperationSkipped,
+		sdk.NewAttribute(AttributeKeySpotOperationOrderId, orderId.String()),
+		sdk.NewAttribute(AttributeKeySpotOperationClobPairId, fmt.Sprint(orderId.GetClobPairId())),
+		sdk.NewAttribute(AttributeKeySpotOperationSkipReason, string(reason)),
 	)
 }

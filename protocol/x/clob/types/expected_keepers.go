@@ -41,6 +41,11 @@ type SubaccountsKeeper interface {
 	) (
 		val satypes.Subaccount,
 	)
+	GetSpotOrderEpoch(
+		ctx sdk.Context,
+		id satypes.SubaccountId,
+		assetId uint32,
+	) uint64
 	GetStreamSubaccountUpdate(
 		ctx sdk.Context,
 		id satypes.SubaccountId,
@@ -90,6 +95,11 @@ type SubaccountsKeeper interface {
 		ctx sdk.Context,
 		amount *big.Int,
 		perpetualId uint32,
+	) error
+	TransferSpotFees(
+		ctx sdk.Context,
+		assetId uint32,
+		quantums *big.Int,
 	) error
 	TransferBuilderFees(
 		ctx sdk.Context,

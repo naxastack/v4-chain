@@ -157,6 +157,8 @@ var (
 		"/dydxprotocol.clob.MsgUpdateEquityTierLimitConfigurationResponse": nil,
 		"/dydxprotocol.clob.MsgUpdateLiquidationsConfig":                   &clob.MsgUpdateLiquidationsConfig{},
 		"/dydxprotocol.clob.MsgUpdateLiquidationsConfigResponse":           nil,
+		"/dydxprotocol.clob.MsgUpdateSpotResourceParams":                   &clob.MsgUpdateSpotResourceParams{},
+		"/dydxprotocol.clob.MsgUpdateSpotResourceParamsResponse":           nil,
 
 		// delaymsg
 		"/dydxprotocol.delaymsg.MsgDelayMessage":         &delaymsg.MsgDelayMessage{},
@@ -165,6 +167,8 @@ var (
 		// feetiers
 		"/dydxprotocol.feetiers.MsgUpdatePerpetualFeeParams":           &feetiers.MsgUpdatePerpetualFeeParams{},
 		"/dydxprotocol.feetiers.MsgUpdatePerpetualFeeParamsResponse":   nil,
+		"/dydxprotocol.feetiers.MsgUpdateSpotFeeParams":                &feetiers.MsgUpdateSpotFeeParams{},
+		"/dydxprotocol.feetiers.MsgUpdateSpotFeeParamsResponse":        nil,
 		"/dydxprotocol.feetiers.MsgSetMarketFeeDiscountParams":         &feetiers.MsgSetMarketFeeDiscountParams{},
 		"/dydxprotocol.feetiers.MsgSetMarketFeeDiscountParamsResponse": nil,
 		"/dydxprotocol.feetiers.MsgSetStakingTiers":                    &feetiers.MsgSetStakingTiers{},
