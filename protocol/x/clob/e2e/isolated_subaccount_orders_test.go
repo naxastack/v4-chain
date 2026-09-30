@@ -659,7 +659,7 @@ func TestIsolatedSubaccountOrders(t *testing.T) {
 			}
 
 			for _, expectedSubaccount := range tc.expectedSubaccounts {
-				require.Equal(
+				requirePerpetualSubaccountEqual(
 					t,
 					expectedSubaccount,
 					tApp.App.SubaccountsKeeper.GetSubaccount(ctx, *expectedSubaccount.Id),

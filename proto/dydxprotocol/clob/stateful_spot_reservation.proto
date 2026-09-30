@@ -1,0 +1,26 @@
+syntax = "proto3";
+package dydxprotocol.clob;
+
+import "gogoproto/gogo.proto";
+import "dydxprotocol/clob/order.proto";
+
+option go_package = "github.com/dydxprotocol/v4-chain/protocol/x/clob/types";
+
+// StatefulSpotReservation records the asset locked by one spot long-term order.
+message StatefulSpotReservation {
+  // OrderId identifies the stateful spot order that owns this reservation.
+  OrderId order_id = 1 [ (gogoproto.nullable) = false ];
+
+  // OutgoingAssetId identifies the asset whose available balance is reduced.
+  uint32 outgoing_asset_id = 2;
+
+  // ReservedQuantums is the remaining amount locked for this order.
+  bytes reserved_quantums = 3 [
+    (gogoproto.customtype) =
+        "github.com/dydxprotocol/v4-chain/protocol/dtypes.SerializableInt",
+    (gogoproto.nullable) = false
+  ];
+
+  // RemainingBaseQuantums is the unfilled base quantity used for recalculation.
+  uint64 remaining_base_quantums = 4;
+}

@@ -21,14 +21,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// collateralDrain moves USDC from a perpetual trading account to that owner's
+// canonical FUNDING subaccount. Bank withdrawal cannot drain perpetual
+// collateral after the D2 funding path.
+type collateralDrain struct {
+	From   satypes.SubaccountId
+	Amount uint64
+}
+
 func TestConditionalOrderRemoval(t *testing.T) {
 	tests := map[string]struct {
 		subaccounts []satypes.Subaccount
 		orders      []clobtypes.Order
 
-		// Optional withdraw message for under-collateralized tests.
-		withdrawal  *sendingtypes.MsgWithdrawFromSubaccount
-		priceUpdate *prices.MsgUpdateMarketPrices
+		// Optional PERPETUAL→FUNDING drain for under-collateralized tests.
+		collateralDrain *collateralDrain
+		priceUpdate     *prices.MsgUpdateMarketPrices
 
 		// Optional short term order
 		subsequentOrder *clobtypes.Order
@@ -144,11 +152,9 @@ func TestConditionalOrderRemoval(t *testing.T) {
 				constants.LongTermOrder_Carl_Num0_Id0_Clob0_Buy1BTC_Price50000_GTBT10,
 				constants.ConditionalOrder_Dave_Num0_Id0_Clob0_Sell1BTC_Price50000_GTBT10_SL_50003,
 			},
-			withdrawal: &sendingtypes.MsgWithdrawFromSubaccount{
-				Sender:    constants.Dave_Num0,
-				Recipient: constants.DaveAccAddress.String(),
-				AssetId:   constants.Usdc.Id,
-				Quantums:  10_000_000_000,
+			collateralDrain: &collateralDrain{
+				From:   constants.Dave_Num0,
+				Amount: 10_000_000_000,
 			},
 			priceUpdate: &prices.MsgUpdateMarketPrices{
 				MarketPriceUpdates: []*prices.MsgUpdateMarketPrices_MarketPrice{
@@ -171,11 +177,9 @@ func TestConditionalOrderRemoval(t *testing.T) {
 			orders: []clobtypes.Order{
 				constants.ConditionalOrder_Dave_Num0_Id0_Clob0_Sell1BTC_Price50000_GTBT10_SL_50003,
 			},
-			withdrawal: &sendingtypes.MsgWithdrawFromSubaccount{
-				Sender:    constants.Dave_Num0,
-				Recipient: constants.DaveAccAddress.String(),
-				AssetId:   constants.Usdc.Id,
-				Quantums:  500_000_000_000,
+			collateralDrain: &collateralDrain{
+				From:   constants.Dave_Num0,
+				Amount: 500_000_000_000,
 			},
 			priceUpdate: &prices.MsgUpdateMarketPrices{
 				MarketPriceUpdates: []*prices.MsgUpdateMarketPrices_MarketPrice{
@@ -201,6 +205,9 @@ func TestConditionalOrderRemoval(t *testing.T) {
 					&genesis,
 					func(genesisState *satypes.GenesisState) {
 						genesisState.Subaccounts = tc.subaccounts
+						if tc.collateralDrain != nil {
+							addCanonicalFundingSubaccount(genesisState, tc.collateralDrain.From)
+						}
 					},
 				)
 				testapp.UpdateGenesisDocWithAppStateForModule(
@@ -283,21 +290,7 @@ func TestConditionalOrderRemoval(t *testing.T) {
 				}
 			}
 
-			// Do the optional withdraw.
-			if tc.withdrawal != nil {
-				CheckTx_MsgWithdrawFromSubaccount := testapp.MustMakeCheckTx(
-					ctx,
-					tApp.App,
-					testapp.MustMakeCheckTxOptions{
-						AccAddressForSigning: tc.withdrawal.Sender.Owner,
-						Gas:                  100_000,
-						FeeAmt:               constants.TestFeeCoins_5Cents,
-					},
-					tc.withdrawal,
-				)
-				checkTxResp := tApp.CheckTx(CheckTx_MsgWithdrawFromSubaccount)
-				require.Conditionf(t, checkTxResp.IsOK, "Expected CheckTx to succeed. Response: %+v", checkTxResp)
-			}
+			checkTxCollateralDrain(t, tApp, ctx, tc.collateralDrain)
 			// Advance to the next block, persisting removals in operations queue to state.
 			ctx = tApp.AdvanceToBlock(3, testapp.AdvanceToBlockOptions{})
 
@@ -616,8 +609,8 @@ func TestOrderRemoval(t *testing.T) {
 		firstOrder  clobtypes.Order
 		secondOrder clobtypes.Order
 
-		// Optional withdraw message for under-collateralized tests.
-		withdrawal *sendingtypes.MsgWithdrawFromSubaccount
+		// Optional PERPETUAL→FUNDING drain for under-collateralized tests.
+		collateralDrain *collateralDrain
 
 		expectedFirstOrderRemoved  bool
 		expectedSecondOrderRemoved bool
@@ -675,11 +668,9 @@ func TestOrderRemoval(t *testing.T) {
 			firstOrder:  constants.LongTermOrder_Carl_Num0_Id0_Clob0_Buy1BTC_Price50000_GTBT10,
 			secondOrder: constants.LongTermOrder_Dave_Num0_Id0_Clob0_Sell1BTC_Price50000_GTBT10,
 
-			withdrawal: &sendingtypes.MsgWithdrawFromSubaccount{
-				Sender:    constants.Dave_Num0,
-				Recipient: constants.DaveAccAddress.String(),
-				AssetId:   constants.Usdc.Id,
-				Quantums:  10_000_000_000,
+			collateralDrain: &collateralDrain{
+				From:   constants.Dave_Num0,
+				Amount: 10_000_000_000,
 			},
 
 			expectedFirstOrderRemoved:  false,
@@ -695,11 +686,9 @@ func TestOrderRemoval(t *testing.T) {
 			firstOrder:  constants.LongTermOrder_Carl_Num0_Id0_Clob0_Buy1BTC_Price50000_GTBT10,
 			secondOrder: constants.LongTermOrder_Dave_Num0_Id0_Clob0_Sell1BTC_Price50000_GTBT10,
 
-			withdrawal: &sendingtypes.MsgWithdrawFromSubaccount{
-				Sender:    constants.Carl_Num0,
-				Recipient: constants.CarlAccAddress.String(),
-				AssetId:   constants.Usdc.Id,
-				Quantums:  10_000_000_000,
+			collateralDrain: &collateralDrain{
+				From:   constants.Carl_Num0,
+				Amount: 10_000_000_000,
 			},
 
 			expectedFirstOrderRemoved:  true, // maker is under-collateralized
@@ -717,6 +706,9 @@ func TestOrderRemoval(t *testing.T) {
 					&genesis,
 					func(genesisState *satypes.GenesisState) {
 						genesisState.Subaccounts = tc.subaccounts
+						if tc.collateralDrain != nil {
+							addCanonicalFundingSubaccount(genesisState, tc.collateralDrain.From)
+						}
 					},
 				)
 				testapp.UpdateGenesisDocWithAppStateForModule(
@@ -773,21 +765,7 @@ func TestOrderRemoval(t *testing.T) {
 				require.Conditionf(t, resp.IsOK, "Expected CheckTx to succeed. Response: %+v", resp)
 			}
 
-			// Do the optional withdraw.
-			if tc.withdrawal != nil {
-				CheckTx_MsgWithdrawFromSubaccount := testapp.MustMakeCheckTx(
-					ctx,
-					tApp.App,
-					testapp.MustMakeCheckTxOptions{
-						AccAddressForSigning: tc.withdrawal.Sender.Owner,
-						Gas:                  100_000,
-						FeeAmt:               constants.TestFeeCoins_5Cents,
-					},
-					tc.withdrawal,
-				)
-				checkTxResp := tApp.CheckTx(CheckTx_MsgWithdrawFromSubaccount)
-				require.Conditionf(t, checkTxResp.IsOK, "Expected CheckTx to succeed. Response: %+v", checkTxResp)
-			}
+			checkTxCollateralDrain(t, tApp, ctx, tc.collateralDrain)
 
 			// First block only persists stateful orders to state without matching them.
 			// Therefore, both orders should be in state at this point.
@@ -902,4 +880,60 @@ func TestOrderRemoval_MultipleReplayOperationsDuringPrepareCheckState(t *testing
 		DeliverTxsOverride: [][]byte{},
 	})
 	_ = tApp.AdvanceToBlock(4, testapp.AdvanceToBlockOptions{})
+}
+
+// canonicalFundingSubaccountNumber matches other e2e fixtures that create a
+// per-owner FUNDING account without colliding with Num0 trading accounts.
+const canonicalFundingSubaccountNumber = uint32(127)
+
+func addCanonicalFundingSubaccount(genesisState *satypes.GenesisState, owner satypes.SubaccountId) {
+	fundingID := &satypes.SubaccountId{
+		Owner:  owner.Owner,
+		Number: canonicalFundingSubaccountNumber,
+	}
+	genesisState.Subaccounts = append(genesisState.Subaccounts, satypes.Subaccount{
+		Id:          fundingID,
+		AccountType: satypes.AccountType_ACCOUNT_TYPE_FUNDING,
+	})
+	genesisState.TypedSubaccounts = append(genesisState.TypedSubaccounts, satypes.TypedSubaccount{
+		Owner:        owner.Owner,
+		AccountType:  satypes.AccountType_ACCOUNT_TYPE_FUNDING,
+		SubaccountId: fundingID,
+	})
+}
+
+func checkTxCollateralDrain(
+	t *testing.T,
+	tApp *testapp.TestApp,
+	ctx sdktypes.Context,
+	drain *collateralDrain,
+) {
+	t.Helper()
+	if drain == nil {
+		return
+	}
+
+	transfer := &sendingtypes.MsgCreateTransfer{
+		Transfer: &sendingtypes.Transfer{
+			Sender: drain.From,
+			Recipient: satypes.SubaccountId{
+				Owner:  drain.From.Owner,
+				Number: canonicalFundingSubaccountNumber,
+			},
+			AssetId: constants.Usdc.Id,
+			Amount:  drain.Amount,
+		},
+	}
+	checkTx := testapp.MustMakeCheckTx(
+		ctx,
+		tApp.App,
+		testapp.MustMakeCheckTxOptions{
+			AccAddressForSigning: drain.From.Owner,
+			Gas:                  200_000,
+			FeeAmt:               constants.TestFeeCoins_5Cents,
+		},
+		transfer,
+	)
+	resp := tApp.CheckTx(checkTx)
+	require.Conditionf(t, resp.IsOK, "Expected collateral drain CheckTx to succeed. Response: %+v", resp)
 }

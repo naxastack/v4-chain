@@ -200,6 +200,28 @@ func TestCalculateUpdatedSubaccountPreservesAccountType(t *testing.T) {
 	require.Equal(t, types.AccountType_ACCOUNT_TYPE_SPOT, updated.AccountType)
 }
 
+func TestCalculateUpdatedSubaccountDefaultsPerpetualTypeWhenClosingLastPosition(t *testing.T) {
+	subaccount := types.Subaccount{
+		Id:             &types.SubaccountId{Owner: "test", Number: 0},
+		AssetPositions: testutil.CreateUsdcAssetPositions(big.NewInt(100)),
+		PerpetualPositions: []*types.PerpetualPosition{
+			testutil.CreateSinglePerpetualPosition(1, big.NewInt(1), big.NewInt(0), big.NewInt(0)),
+		},
+	}
+	updated := lib.CalculateUpdatedSubaccount(
+		types.SettledUpdate{
+			SettledSubaccount: subaccount,
+			PerpetualUpdates: []types.PerpetualUpdate{
+				{PerpetualId: 1, BigQuantumsDelta: big.NewInt(-1)},
+			},
+		},
+		perptypes.PerpInfos{1: perp_testutil.CreatePerpInfo(1, -6, 100, 0)},
+	)
+	require.Empty(t, updated.PerpetualPositions)
+	require.NotEmpty(t, updated.AssetPositions)
+	require.Equal(t, types.AccountType_ACCOUNT_TYPE_PERPETUAL, updated.AccountType)
+}
+
 func TestValidateSubaccountCandidate(t *testing.T) {
 	tests := []struct {
 		name       string

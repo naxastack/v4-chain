@@ -14,4 +14,7 @@ message GenesisState {
 
   // The staking tiers.
   repeated StakingTier staking_tiers = 2;
+
+  // The parameters for spot fees.
+  SpotFeeParams spot_fee_params = 3 [ (gogoproto.nullable) = false ];
 }

@@ -421,6 +421,13 @@ func (k Keeper) PlaceStatefulOrder(
 	// 5. If we are in `deliverTx` then we write the order to committed state otherwise add the order to uncommitted
 	// state.
 	if lib.IsDeliverTxMode(ctx) {
+		clobPair, found := k.GetClobPair(ctx, order.GetClobPairId())
+		if !found {
+			return types.ErrInvalidClob
+		}
+		if clobPair.GetSpotClobMetadata() != nil {
+			return k.placeSpotStatefulOrder(ctx, order)
+		}
 		// Write the stateful order to state and the memstore.
 		if order.IsTwapOrder() {
 			k.SetTWAPOrderPlacement(ctx, order, lib.MustConvertIntegerToUint32(ctx.BlockHeight()))
@@ -855,7 +862,17 @@ func (k Keeper) PerformStatefulOrderValidation(
 			order.GetClobPairId(),
 		)
 	}
-
+	if clobPair.GetSpotClobMetadata() != nil {
+		subaccount := k.subaccountsKeeper.GetSubaccount(ctx, order.OrderId.SubaccountId)
+		if subaccount.AccountType != satypes.AccountType_ACCOUNT_TYPE_SPOT {
+			return errorsmod.Wrap(types.ErrInvalidPlaceOrder, "spot orders require a spot subaccount")
+		}
+		if err := types.ValidateSpotLongTermOrder(*order, k.feeTiersKeeper.GetSpotFeeParams(ctx).TradingFeePpm); err != nil {
+			return err
+		}
+	} else if err := types.ValidatePerpetualOrderSpotFields(*order); err != nil {
+		return err
+	}
 	if order.Subticks%uint64(clobPair.SubticksPerTick) != 0 {
 		return errorsmod.Wrapf(
 			types.ErrInvalidPlaceOrder,

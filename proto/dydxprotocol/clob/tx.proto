@@ -11,6 +11,7 @@ import "dydxprotocol/clob/matches.proto";
 import "dydxprotocol/clob/order.proto";
 import "dydxprotocol/clob/order_removals.proto";
 import "dydxprotocol/clob/liquidations_config.proto";
+import "dydxprotocol/clob/spot_resource_params.proto";
 import "dydxprotocol/subaccounts/subaccount.proto";
 
 // this line is used by starport scaffolding # proto/tx/import
@@ -47,6 +48,10 @@ service Msg {
   // UpdateLiquidationsConfig updates the liquidations configuration in state.
   rpc UpdateLiquidationsConfig(MsgUpdateLiquidationsConfig)
       returns (MsgUpdateLiquidationsConfigResponse);
+  // UpdateSpotResourceParams updates spot consensus resource limits.
+  rpc UpdateSpotResourceParams(MsgUpdateSpotResourceParams)
+      returns (MsgUpdateSpotResourceParamsResponse);
+
   // UpdateLeverage allows accounts to update their desired leverage for
   // clob pairs.
   rpc UpdateLeverage(MsgUpdateLeverage) returns (MsgUpdateLeverageResponse);
@@ -214,6 +219,17 @@ message MsgUpdateLiquidationsConfig {
 
 // MsgUpdateLiquidationsConfig is the Msg/LiquidationsConfig response type.
 message MsgUpdateLiquidationsConfigResponse {}
+
+// MsgUpdateSpotResourceParams updates all spot resource parameters.
+message MsgUpdateSpotResourceParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  SpotResourceParams spot_resource_params = 2
+      [ (gogoproto.nullable) = false ];
+}
+
+// MsgUpdateSpotResourceParamsResponse is the response type for updating spot resource parameters.
+message MsgUpdateSpotResourceParamsResponse {}
 
 // LeverageEntry represents a single clob pair leverage setting.
 message LeverageEntry {

@@ -257,6 +257,27 @@ func (_m *ClobKeeper) GetBlockRateLimitConfiguration(ctx types.Context) clobtype
 	return r0
 }
 
+// GetSpotResourceParams provides a mock function with given fields: ctx
+func (_m *ClobKeeper) GetSpotResourceParams(ctx types.Context) clobtypes.SpotResourceParams {
+	ret := _m.Called(ctx)
+	if len(ret) == 0 {
+		return clobtypes.DefaultSpotResourceParams()
+	}
+	if rf, ok := ret.Get(0).(func(types.Context) clobtypes.SpotResourceParams); ok {
+		return rf(ctx)
+	}
+	return ret.Get(0).(clobtypes.SpotResourceParams)
+}
+
+// SetSpotResourceParams provides a mock function with given fields: ctx, params
+func (_m *ClobKeeper) SetSpotResourceParams(ctx types.Context, params clobtypes.SpotResourceParams) error {
+	ret := _m.Called(ctx, params)
+	if len(ret) == 0 {
+		return nil
+	}
+	return ret.Error(0)
+}
+
 // GetClobPair provides a mock function with given fields: ctx, id
 func (_m *ClobKeeper) GetClobPair(ctx types.Context, id clobtypes.ClobPairId) (clobtypes.ClobPair, bool) {
 	ret := _m.Called(ctx, id)
@@ -1266,4 +1287,30 @@ func NewClobKeeper(t interface {
 	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
+}
+
+// CreateSpotClobPair provides a mock function with given fields: ctx, clobPair
+func (_m *ClobKeeper) CreateSpotClobPair(ctx types.Context, clobPair clobtypes.ClobPair) (clobtypes.ClobPair, error) {
+	ret := _m.Called(ctx, clobPair)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateSpotClobPair")
+	}
+
+	var r0 clobtypes.ClobPair
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.Context, clobtypes.ClobPair) (clobtypes.ClobPair, error)); ok {
+		return rf(ctx, clobPair)
+	}
+	if rf, ok := ret.Get(0).(func(types.Context, clobtypes.ClobPair) clobtypes.ClobPair); ok {
+		r0 = rf(ctx, clobPair)
+	} else {
+		r0 = ret.Get(0).(clobtypes.ClobPair)
+	}
+	if rf, ok := ret.Get(1).(func(types.Context, clobtypes.ClobPair) error); ok {
+		r1 = rf(ctx, clobPair)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }

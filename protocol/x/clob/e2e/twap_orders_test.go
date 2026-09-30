@@ -660,24 +660,26 @@ func TestTwapOrderStopsPlacingSubordersWhenCollateralIsDepleted(t *testing.T) {
 		},
 	})
 
-	withdrawal := &sendingtypes.MsgWithdrawFromSubaccount{
-		Sender:    constants.Alice_Num0,
-		Recipient: constants.BobAccAddress.String(), // send to bob
-		AssetId:   constants.Usdc.Id,
-		Quantums:  99_999_995_000_000_000, // remaining balance + 95B to be below collat requirements for next suborder
+	transfer := &sendingtypes.MsgCreateTransfer{
+		Transfer: &sendingtypes.Transfer{
+			Sender:    constants.Alice_Num0,
+			Recipient: constants.Bob_Num0,
+			AssetId:   constants.Usdc.Id,
+			Amount:    99_999_995_000_000_000, // remaining balance + 95B to be below collateral requirements
+		},
 	}
 
-	CheckTx_MsgWithdrawFromSubaccount := testapp.MustMakeCheckTx(
+	checkTxMsgCreateTransfer := testapp.MustMakeCheckTx(
 		ctx,
 		tApp.App,
 		testapp.MustMakeCheckTxOptions{
-			AccAddressForSigning: withdrawal.Sender.Owner,
+			AccAddressForSigning: transfer.Transfer.Sender.Owner,
 			Gas:                  200_000,
 			FeeAmt:               constants.TestFeeCoins_5Cents,
 		},
-		withdrawal,
+		transfer,
 	)
-	tApp.CheckTx(CheckTx_MsgWithdrawFromSubaccount)
+	tApp.CheckTx(checkTxMsgCreateTransfer)
 	ctx = tApp.AdvanceToBlock(6, testapp.AdvanceToBlockOptions{})
 
 	// --- Third suborder trigger (should fail to place due to insufficient collateral) ---

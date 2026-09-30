@@ -322,6 +322,10 @@ const GenesisState = `{
           }
         ]
       },
+      "spot_resource_params": {
+        "max_spot_stateful_orders_per_subaccount": 100,
+        "max_spot_delist_orders_per_block": 100
+      },
       "liquidations_config": {
         "fillable_price_config": {
           "bankruptcy_adjustment_ppm": 1000000,
@@ -571,7 +575,10 @@ const GenesisState = `{
           }
         ]
       },
-      "staking_tiers": []
+      "staking_tiers": [],
+      "spot_fee_params": {
+        "trading_fee_ppm": 1000
+      }
     },
     "genutil": {
       "gen_txs": [

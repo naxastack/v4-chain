@@ -199,3 +199,17 @@ func NewAssetsKeeper(t interface {
 
 	return mock
 }
+
+// ValidateAssetForSpotTrading provides a mock function with given fields: ctx, assetId
+func (_m *AssetsKeeper) ValidateAssetForSpotTrading(ctx types.Context, assetId uint32) error {
+	ret := _m.Called(ctx, assetId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateAssetForSpotTrading")
+	}
+
+	if rf, ok := ret.Get(0).(func(types.Context, uint32) error); ok {
+		return rf(ctx, assetId)
+	}
+	return ret.Error(0)
+}

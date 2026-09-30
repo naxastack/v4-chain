@@ -80,14 +80,20 @@ func (c *ClobPair) GetClobPairId() ClobPairId {
 
 // Stateless validation on ClobPair.
 func (c *ClobPair) Validate() error {
-	switch c.Metadata.(type) {
-	// TODO(DEC-1535): update this when additional clob pair types are supported.
+	switch metadata := c.Metadata.(type) {
+	case *ClobPair_PerpetualClobMetadata:
+		if metadata.PerpetualClobMetadata == nil {
+			return errorsmod.Wrap(ErrInvalidClobPairParameter, "perpetual CLOB metadata cannot be nil")
+		}
 	case *ClobPair_SpotClobMetadata:
-		return errorsmod.Wrapf(
-			ErrInvalidClobPairParameter,
-			"CLOB pair (%+v) is not a perpetual CLOB.",
-			c,
-		)
+		if metadata.SpotClobMetadata == nil {
+			return errorsmod.Wrap(ErrInvalidClobPairParameter, "spot CLOB metadata cannot be nil")
+		}
+		if metadata.SpotClobMetadata.BaseAssetId == metadata.SpotClobMetadata.QuoteAssetId {
+			return errorsmod.Wrap(ErrInvalidClobPairParameter, "spot base and quote assets must differ")
+		}
+	default:
+		return errorsmod.Wrap(ErrInvalidClobPairParameter, "CLOB metadata must be specified")
 	}
 
 	if !IsSupportedClobPairStatus(c.Status) {

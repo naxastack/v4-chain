@@ -16,6 +16,7 @@ import (
 	"github.com/dydxprotocol/v4-chain/protocol/indexer/indexer_manager"
 	"github.com/dydxprotocol/v4-chain/protocol/lib"
 	dydxlog "github.com/dydxprotocol/v4-chain/protocol/lib/log"
+	assettypes "github.com/dydxprotocol/v4-chain/protocol/x/assets/types"
 	"github.com/dydxprotocol/v4-chain/protocol/x/clob/types"
 	satypes "github.com/dydxprotocol/v4-chain/protocol/x/subaccounts/types"
 )
@@ -192,22 +193,20 @@ func (k Keeper) ValidateClobPairCreation(ctx sdk.Context, clobPair *types.ClobPa
 		)
 	}
 
-	perpetualId, err := clobPair.GetPerpetualId()
-	if err != nil {
-		return errorsmod.Wrap(
-			types.ErrInvalidClobPairParameter,
-			err.Error(),
-		)
-	}
-
-	// Verify the perpetual ID is not already associated with an existing CLOB pair.
-	if clobPairId, found := k.PerpetualIdToClobPairId[perpetualId]; found {
-		return errorsmod.Wrapf(
-			types.ErrPerpetualAssociatedWithExistingClobPair,
-			"perpetual id=%v, existing clob pair id=%v",
-			perpetualId,
-			clobPairId,
-		)
+	if clobPair.GetPerpetualClobMetadata() != nil {
+		perpetualId, err := clobPair.GetPerpetualId()
+		if err != nil {
+			return errorsmod.Wrap(types.ErrInvalidClobPairParameter, err.Error())
+		}
+		// Verify the perpetual ID is not already associated with an existing CLOB pair.
+		if clobPairIds, found := k.PerpetualIdToClobPairId[perpetualId]; found {
+			return errorsmod.Wrapf(
+				types.ErrPerpetualAssociatedWithExistingClobPair,
+				"perpetual id=%v, existing clob pair ids=%v",
+				perpetualId,
+				clobPairIds,
+			)
+		}
 	}
 
 	return k.validateClobPair(ctx, clobPair)
@@ -225,7 +224,6 @@ func (k Keeper) validateClobPair(ctx sdk.Context, clobPair *types.ClobPair) erro
 		return err
 	}
 
-	// TODO(DEC-1535): update this validation when we implement "spot"/"asset" clob pairs.
 	switch clobPair.Metadata.(type) {
 	case *types.ClobPair_PerpetualClobMetadata:
 		perpetualId, err := clobPair.GetPerpetualId()
@@ -244,13 +242,24 @@ func (k Keeper) validateClobPair(ctx sdk.Context, clobPair *types.ClobPair) erro
 				clobPair,
 			)
 		}
+	case *types.ClobPair_SpotClobMetadata:
+		metadata := clobPair.GetSpotClobMetadata()
+		if metadata.QuoteAssetId != assettypes.AssetUsdc.Id {
+			return errorsmod.Wrapf(
+				types.ErrInvalidClobPairParameter,
+				"spot CLOB pair %d must use asset %d as quote asset",
+				clobPair.Id,
+				assettypes.AssetUsdc.Id,
+			)
+		}
+		if err := k.assetsKeeper.ValidateAssetForSpotTrading(ctx, metadata.BaseAssetId); err != nil {
+			return errorsmod.Wrapf(err, "spot CLOB pair %d has invalid base asset %d", clobPair.Id, metadata.BaseAssetId)
+		}
+		if err := k.assetsKeeper.ValidateAssetForSpotTrading(ctx, metadata.QuoteAssetId); err != nil {
+			return errorsmod.Wrapf(err, "spot CLOB pair %d has invalid quote asset %d", clobPair.Id, metadata.QuoteAssetId)
+		}
 	default:
-		return errorsmod.Wrapf(
-			types.ErrInvalidClobPairParameter,
-			// TODO(DEC-1535): update this error message when we implement "spot"/"asset" clob pairs.
-			"CLOB pair (%+v) is not a perpetual CLOB.",
-			clobPair,
-		)
+		return errorsmod.Wrapf(types.ErrInvalidClobPairParameter, "CLOB pair (%+v) has unsupported metadata", clobPair)
 	}
 	return nil
 }

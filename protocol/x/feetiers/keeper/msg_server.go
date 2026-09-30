@@ -42,6 +42,20 @@ func (k msgServer) UpdatePerpetualFeeParams(
 	return &types.MsgUpdatePerpetualFeeParamsResponse{}, nil
 }
 
+func (k msgServer) UpdateSpotFeeParams(
+	goCtx context.Context,
+	msg *types.MsgUpdateSpotFeeParams,
+) (*types.MsgUpdateSpotFeeParamsResponse, error) {
+	if !k.Keeper.HasAuthority(msg.Authority) {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority %s", msg.Authority)
+	}
+	ctx := lib.UnwrapSDKContext(goCtx, types.ModuleName)
+	if err := k.Keeper.SetSpotFeeParams(ctx, msg.SpotFeeParams); err != nil {
+		return nil, err
+	}
+	return &types.MsgUpdateSpotFeeParamsResponse{}, nil
+}
+
 // SetMarketFeeDiscountParams sets or updates fee discount parameters for specific CLOB pairs
 func (k msgServer) SetMarketFeeDiscountParams(
 	goCtx context.Context,

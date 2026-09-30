@@ -27,6 +27,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func normalizeExpectedPerpetualSubaccount(subaccount satypes.Subaccount) satypes.Subaccount {
+	if subaccount.AccountType == satypes.AccountType_ACCOUNT_TYPE_UNSPECIFIED &&
+		(len(subaccount.AssetPositions) > 0 || len(subaccount.PerpetualPositions) > 0) {
+		subaccount.AccountType = satypes.AccountType_ACCOUNT_TYPE_PERPETUAL
+	}
+	return subaccount
+}
 func TestIsValidInsuranceFundDelta(t *testing.T) {
 	tests := map[string]struct {
 		// Setup
@@ -701,7 +708,7 @@ func TestOffsetSubaccountPerpetualPosition(t *testing.T) {
 			}
 
 			for _, subaccount := range tc.subaccounts {
-				ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, subaccount)
+				ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, normalizeExpectedPerpetualSubaccount(subaccount))
 			}
 
 			ks.BlockTimeKeeper.SetPreviousBlockInfo(ks.Ctx, &blocktimetypes.BlockInfo{
@@ -751,7 +758,7 @@ func TestOffsetSubaccountPerpetualPosition(t *testing.T) {
 			require.True(t, tc.expectedQuantumsRemaining.Cmp(deltaQuantumsRemaining) == 0)
 
 			for _, subaccount := range tc.expectedSubaccounts {
-				require.Equal(t, subaccount, ks.SubaccountsKeeper.GetSubaccount(ks.Ctx, *subaccount.Id))
+				require.Equal(t, normalizeExpectedPerpetualSubaccount(subaccount), ks.SubaccountsKeeper.GetSubaccount(ks.Ctx, *subaccount.Id))
 			}
 
 			if tc.expectedOpenInterest != nil {
@@ -1153,8 +1160,8 @@ func TestProcessDeleveraging(t *testing.T) {
 				testPerps,
 			)
 
-			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, tc.liquidatedSubaccount)
-			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, tc.offsettingSubaccount)
+			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, normalizeExpectedPerpetualSubaccount(tc.liquidatedSubaccount))
+			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, normalizeExpectedPerpetualSubaccount(tc.offsettingSubaccount))
 
 			bankruptcyPriceQuoteQuantums := new(big.Int)
 			if tc.expectedErr == nil {
@@ -1197,14 +1204,14 @@ func TestProcessDeleveraging(t *testing.T) {
 				actualLiquidated := ks.SubaccountsKeeper.GetSubaccount(ks.Ctx, *tc.liquidatedSubaccount.GetId())
 				require.Equal(
 					t,
-					tc.expectedLiquidatedSubaccount,
+					normalizeExpectedPerpetualSubaccount(tc.expectedLiquidatedSubaccount),
 					actualLiquidated,
 				)
 
 				actualOffsetting := ks.SubaccountsKeeper.GetSubaccount(ks.Ctx, *tc.offsettingSubaccount.GetId())
 				require.Equal(
 					t,
-					tc.expectedOffsettingSubaccount,
+					normalizeExpectedPerpetualSubaccount(tc.expectedOffsettingSubaccount),
 					actualOffsetting,
 				)
 			} else {
@@ -1372,8 +1379,8 @@ func TestProcessDeleveragingAtOraclePrice(t *testing.T) {
 				testPerps,
 			)
 
-			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, tc.liquidatedSubaccount)
-			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, tc.offsettingSubaccount)
+			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, normalizeExpectedPerpetualSubaccount(tc.liquidatedSubaccount))
+			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, normalizeExpectedPerpetualSubaccount(tc.offsettingSubaccount))
 
 			fillPriceQuoteQuantums, err := ks.PerpetualsKeeper.GetNetNotional(
 				ks.Ctx,
@@ -1415,14 +1422,14 @@ func TestProcessDeleveragingAtOraclePrice(t *testing.T) {
 				actualLiquidated := ks.SubaccountsKeeper.GetSubaccount(ks.Ctx, *tc.liquidatedSubaccount.GetId())
 				require.Equal(
 					t,
-					tc.expectedLiquidatedSubaccount,
+					normalizeExpectedPerpetualSubaccount(tc.expectedLiquidatedSubaccount),
 					actualLiquidated,
 				)
 
 				actualOffsetting := ks.SubaccountsKeeper.GetSubaccount(ks.Ctx, *tc.offsettingSubaccount.GetId())
 				require.Equal(
 					t,
-					tc.expectedOffsettingSubaccount,
+					normalizeExpectedPerpetualSubaccount(tc.expectedOffsettingSubaccount),
 					actualOffsetting,
 				)
 			} else {
@@ -1546,8 +1553,8 @@ func TestProcessDeleveraging_Rounding(t *testing.T) {
 				testPerps,
 			)
 
-			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, tc.liquidatedSubaccount)
-			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, tc.offsettingSubaccount)
+			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, normalizeExpectedPerpetualSubaccount(tc.liquidatedSubaccount))
+			ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, normalizeExpectedPerpetualSubaccount(tc.offsettingSubaccount))
 			bankruptcyPriceQuoteQuantums, err := ks.ClobKeeper.GetBankruptcyPriceInQuoteQuantums(
 				ks.Ctx,
 				*tc.liquidatedSubaccount.GetId(),

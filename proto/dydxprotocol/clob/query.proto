@@ -11,6 +11,8 @@ import "dydxprotocol/clob/order.proto";
 import "dydxprotocol/clob/matches.proto";
 import "dydxprotocol/clob/liquidations_config.proto";
 import "dydxprotocol/clob/mev.proto";
+import "dydxprotocol/clob/spot_resource_params.proto";
+import "dydxprotocol/clob/stateful_spot_reservation.proto";
 import "dydxprotocol/indexer/off_chain_updates/off_chain_updates.proto";
 import "dydxprotocol/subaccounts/streaming.proto";
 import "dydxprotocol/subaccounts/subaccount.proto";
@@ -55,6 +57,25 @@ service Query {
   rpc LiquidationsConfiguration(QueryLiquidationsConfigurationRequest)
       returns (QueryLiquidationsConfigurationResponse) {
     option (google.api.http).get = "/dydxprotocol/clob/liquidations_config";
+  }
+
+  // Queries the spot resource parameters.
+  rpc SpotResourceParams(QuerySpotResourceParamsRequest)
+      returns (QuerySpotResourceParamsResponse) {
+    option (google.api.http).get = "/dydxprotocol/clob/spot_resource_params";
+  }
+
+  // Queries the reservation owned by one spot long-term order.
+  rpc StatefulSpotReservation(QueryStatefulSpotReservationRequest)
+      returns (QueryStatefulSpotReservationResponse) {
+    option (google.api.http).get = "/dydxprotocol/clob/spot_reservation";
+  }
+
+  // Queries active spot long-term order ids for one CLOB pair.
+  rpc SpotStatefulOrdersByClobPair(QuerySpotStatefulOrdersByClobPairRequest)
+      returns (QuerySpotStatefulOrdersByClobPairResponse) {
+    option (google.api.http).get =
+        "/dydxprotocol/clob/spot_stateful_orders/{clob_pair_id}";
   }
 
   // Queries the stateful order for a given order id.
@@ -144,6 +165,37 @@ message QueryBlockRateLimitConfigurationRequest {}
 message QueryBlockRateLimitConfigurationResponse {
   BlockRateLimitConfiguration block_rate_limit_config = 1
       [ (gogoproto.nullable) = false ];
+}
+
+// QuerySpotResourceParamsRequest is the request for spot resource parameters.
+message QuerySpotResourceParamsRequest {}
+
+// QuerySpotResourceParamsResponse contains spot resource parameters.
+message QuerySpotResourceParamsResponse {
+  SpotResourceParams params = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryStatefulSpotReservationRequest identifies one spot reservation.
+message QueryStatefulSpotReservationRequest {
+  OrderId order_id = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryStatefulSpotReservationResponse contains one spot reservation.
+message QueryStatefulSpotReservationResponse {
+  StatefulSpotReservation reservation = 1
+      [ (gogoproto.nullable) = false ];
+}
+
+// QuerySpotStatefulOrdersByClobPairRequest selects one spot market.
+message QuerySpotStatefulOrdersByClobPairRequest {
+  uint32 clob_pair_id = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QuerySpotStatefulOrdersByClobPairResponse contains deterministic order ids.
+message QuerySpotStatefulOrdersByClobPairResponse {
+  repeated OrderId order_ids = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryStatefulOrderRequest is a request message for StatefulOrder.

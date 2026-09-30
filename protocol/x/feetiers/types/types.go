@@ -15,6 +15,8 @@ type FeeTiersKeeper interface {
 		ctx sdk.Context,
 		params PerpetualFeeParams,
 	) error
+	GetSpotFeeParams(ctx sdk.Context) SpotFeeParams
+	SetSpotFeeParams(ctx sdk.Context, params SpotFeeParams) error
 	GetPerMarketFeeDiscountParams(
 		ctx sdk.Context,
 		clobPairId uint32,

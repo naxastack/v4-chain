@@ -81,11 +81,8 @@ func EndBlocker(
 	// Prune expired stateful orders completely from state.
 	expiredStatefulOrderIds := keeper.RemoveExpiredStatefulOrders(ctx, ctx.BlockTime())
 	for _, orderId := range expiredStatefulOrderIds {
-		// Remove the order fill amount from state.
-		keeper.RemoveOrderFillAmount(ctx, orderId)
-
-		// Delete the stateful order placement from state.
-		keeper.DeleteLongTermOrderPlacement(ctx, orderId)
+		// Remove the stateful order and release any associated spot reservation.
+		keeper.MustRemoveStatefulOrder(ctx, orderId)
 
 		// Emit an on-chain indexer event for Stateful Order Expiration.
 		keeper.GetIndexerEventManager().AddBlockEvent(

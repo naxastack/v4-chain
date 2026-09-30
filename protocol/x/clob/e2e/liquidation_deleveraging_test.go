@@ -641,7 +641,7 @@ func TestLiquidationConfig(t *testing.T) {
 			// Verify test expectations.
 			ctx = tApp.AdvanceToBlock(3, testapp.AdvanceToBlockOptions{})
 			for _, expectedSubaccount := range tc.expectedSubaccounts {
-				require.Equal(
+				requirePerpetualSubaccountEqual(
 					t,
 					expectedSubaccount,
 					tApp.App.SubaccountsKeeper.GetSubaccount(ctx, *expectedSubaccount.Id),
@@ -1221,7 +1221,7 @@ func TestPlacePerpetualLiquidation_Deleveraging(t *testing.T) {
 			// Verify test expectations.
 			ctx = tApp.AdvanceToBlock(3, testapp.AdvanceToBlockOptions{})
 			for _, expectedSubaccount := range tc.expectedSubaccounts {
-				require.Equal(
+				requirePerpetualSubaccountEqual(
 					t,
 					expectedSubaccount,
 					tApp.App.SubaccountsKeeper.GetSubaccount(ctx, *expectedSubaccount.Id),

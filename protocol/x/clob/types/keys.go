@@ -42,6 +42,18 @@ const (
 	// BlockRateLimitConfigKey is the key to retrieve the block rate limit configuration.
 	BlockRateLimitConfigKey = "RateLimCfg"
 
+	// SpotResourceParamsKey is the key for spot resource limits.
+	SpotResourceParamsKey = "SpotResCfg"
+
+	// StatefulSpotReservationKeyPrefix stores reservations by complete OrderId.
+	StatefulSpotReservationKeyPrefix = "SpotRes:"
+
+	// SpotStatefulOrdersByClobPairKeyPrefix indexes active spot orders by market.
+	SpotStatefulOrdersByClobPairKeyPrefix = "SpotPairOrders:"
+
+	// SpotStatefulOrderCountKeyPrefix stores bounded active-order counts by subaccount.
+	SpotStatefulOrderCountKeyPrefix = "SpotOrderCount:"
+
 	// ClobPairKeyPrefix is the prefix to retrieve all ClobPair
 	ClobPairKeyPrefix = "Clob:"
 

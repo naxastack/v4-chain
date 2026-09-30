@@ -500,6 +500,9 @@ func TestGenesisState_Validate(t *testing.T) {
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			if tc.genState.SpotResourceParams == (types.SpotResourceParams{}) {
+				tc.genState.SpotResourceParams = types.DefaultSpotResourceParams()
+			}
 			err := tc.genState.Validate()
 			if tc.expectedError == nil {
 				require.NoError(t, err)

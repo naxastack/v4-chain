@@ -29,3 +29,9 @@ message PerpetualFeeTier {
   // The taker fee once this tier is reached.
   sint32 taker_fee_ppm = 6;
 }
+
+// SpotFeeParams defines the fixed positive fee for spot fills.
+message SpotFeeParams {
+  // Trading fee charged to both maker and taker, in parts per million.
+  uint32 trading_fee_ppm = 1;
+}

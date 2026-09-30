@@ -429,7 +429,7 @@ func TestReduceOnlyOrders(t *testing.T) {
 
 			for _, subaccount := range tc.expectedSubaccounts {
 				actualSubaccount := tApp.App.SubaccountsKeeper.GetSubaccount(ctx, *subaccount.Id)
-				require.Equal(t, subaccount, actualSubaccount)
+				requirePerpetualSubaccountEqual(t, subaccount, actualSubaccount)
 			}
 		})
 	}

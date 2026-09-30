@@ -29,13 +29,13 @@ func TestMsgUpdateClobPair_ValidateBasic(t *testing.T) {
 				SubticksPerTick:  1,
 				Status:           types.ClobPair_STATUS_ACTIVE,
 			},
-			expectedErr: "is not a perpetual CLOB",
+			expectedErr: "spot CLOB metadata cannot be nil",
 		},
 		{
 			desc:      "UNSPECIFIED Status",
 			authority: validAuthority,
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 1,
 				SubticksPerTick:  1,
 				Status:           types.ClobPair_STATUS_PAUSED,
@@ -46,7 +46,7 @@ func TestMsgUpdateClobPair_ValidateBasic(t *testing.T) {
 			desc:      "invalid negative status integer",
 			authority: validAuthority,
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 1,
 				SubticksPerTick:  1,
 				Status:           -1,
@@ -57,7 +57,7 @@ func TestMsgUpdateClobPair_ValidateBasic(t *testing.T) {
 			desc:      "invalid positive status integer",
 			authority: validAuthority,
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 1,
 				SubticksPerTick:  1,
 				Status:           100,
@@ -68,7 +68,7 @@ func TestMsgUpdateClobPair_ValidateBasic(t *testing.T) {
 			desc:      "StepBaseQuantums <= 0",
 			authority: validAuthority,
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 0,
 				SubticksPerTick:  1,
 				Status:           types.ClobPair_STATUS_ACTIVE,
@@ -79,7 +79,7 @@ func TestMsgUpdateClobPair_ValidateBasic(t *testing.T) {
 			desc:      "SubticksPerTick <= 0",
 			authority: validAuthority,
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 1,
 				SubticksPerTick:  0,
 				Status:           types.ClobPair_STATUS_ACTIVE,
@@ -89,7 +89,7 @@ func TestMsgUpdateClobPair_ValidateBasic(t *testing.T) {
 		{
 			desc: "Invalid authority",
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 1,
 				SubticksPerTick:  1,
 				Status:           types.ClobPair_STATUS_ACTIVE,
@@ -100,7 +100,7 @@ func TestMsgUpdateClobPair_ValidateBasic(t *testing.T) {
 			desc:      "Valid ClobPair",
 			authority: validAuthority,
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 1,
 				SubticksPerTick:  1,
 				Status:           types.ClobPair_STATUS_ACTIVE,

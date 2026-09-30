@@ -422,7 +422,7 @@ func TestWithdrawalGating_NegativeTncSubaccount_BlocksThenUnblocks(t *testing.T)
 			// Verify test expectations.
 			ctx = tApp.AdvanceToBlock(4, testapp.AdvanceToBlockOptions{})
 			for _, expectedSubaccount := range tc.expectedSubaccounts {
-				require.Equal(
+				requirePerpetualSubaccountEqual(
 					t,
 					expectedSubaccount,
 					tApp.App.SubaccountsKeeper.GetSubaccount(ctx, *expectedSubaccount.Id),
@@ -441,13 +441,23 @@ func TestWithdrawalGating_NegativeTncSubaccount_BlocksThenUnblocks(t *testing.T)
 			// Verify withdrawals are blocked by trying to create a transfer message that withdraws funds.
 			var msg proto.Message
 			if tc.isWithdrawal {
-				withdrawMsg := sendingtypes.MsgWithdrawFromSubaccount{
-					Sender:    tc.transferOrWithdrawSubaccount,
-					Recipient: tc.transferOrWithdrawSubaccount.Owner,
-					AssetId:   constants.Usdc.Id,
-					Quantums:  1,
+				fundingId := satypes.SubaccountId{
+					Owner:  tc.transferOrWithdrawSubaccount.Owner,
+					Number: 127,
 				}
-				msg = &withdrawMsg
+				tApp.App.SubaccountsKeeper.SetSubaccount(ctx, satypes.Subaccount{
+					Id:          &fundingId,
+					AccountType: satypes.AccountType_ACCOUNT_TYPE_FUNDING,
+				})
+				transferToFunding := sendingtypes.MsgCreateTransfer{
+					Transfer: &sendingtypes.Transfer{
+						Sender:    tc.transferOrWithdrawSubaccount,
+						Recipient: fundingId,
+						AssetId:   constants.Usdc.Id,
+						Amount:    1,
+					},
+				}
+				msg = &transferToFunding
 			} else {
 				transferMsg := sendingtypes.MsgCreateTransfer{
 					Transfer: &sendingtypes.Transfer{
@@ -503,7 +513,7 @@ func TestWithdrawalGating_NegativeTncSubaccount_BlocksThenUnblocks(t *testing.T)
 				expectedSubaccountsAfterWithdrawal = tc.expectedSubaccountsAfterWithdrawal
 			}
 			for _, expectedSubaccount := range expectedSubaccountsAfterWithdrawal {
-				require.Equal(
+				requirePerpetualSubaccountEqual(
 					t,
 					expectedSubaccount,
 					tApp.App.SubaccountsKeeper.GetSubaccount(ctx, *expectedSubaccount.Id),

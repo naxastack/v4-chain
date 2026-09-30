@@ -26,23 +26,29 @@ func (k msgServer) CreateClobPair(
 		)
 	}
 
-	perpetualId, err := msg.ClobPair.GetPerpetualId()
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO(DEC-1535): update this when additional clob pair types are supported.
-	if _, err := k.Keeper.CreatePerpetualClobPair(
-		ctx,
-		msg.ClobPair.Id,
-		// `MsgCreateClobPair.ValidateBasic` ensures that `msg.ClobPair.Metadata` is `PerpetualClobMetadata`.
-		perpetualId,
-		satypes.BaseQuantums(msg.ClobPair.StepBaseQuantums),
-		msg.ClobPair.QuantumConversionExponent,
-		msg.ClobPair.SubticksPerTick,
-		msg.ClobPair.Status,
-	); err != nil {
-		return nil, err
+	switch msg.ClobPair.Metadata.(type) {
+	case *types.ClobPair_PerpetualClobMetadata:
+		perpetualId, err := msg.ClobPair.GetPerpetualId()
+		if err != nil {
+			return nil, err
+		}
+		if _, err := k.Keeper.CreatePerpetualClobPair(
+			ctx,
+			msg.ClobPair.Id,
+			perpetualId,
+			satypes.BaseQuantums(msg.ClobPair.StepBaseQuantums),
+			msg.ClobPair.QuantumConversionExponent,
+			msg.ClobPair.SubticksPerTick,
+			msg.ClobPair.Status,
+		); err != nil {
+			return nil, err
+		}
+	case *types.ClobPair_SpotClobMetadata:
+		if _, err := k.Keeper.CreateSpotClobPair(ctx, msg.ClobPair); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errorsmod.Wrap(types.ErrInvalidClobPairParameter, "unsupported CLOB pair metadata")
 	}
 	return &types.MsgCreateClobPairResponse{}, nil
 }

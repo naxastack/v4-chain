@@ -2148,7 +2148,7 @@ func TestPlacePerpetualLiquidation_Deleveraging(t *testing.T) {
 			)
 
 			for _, s := range tc.subaccounts {
-				ks.SubaccountsKeeper.SetSubaccount(ctx, s)
+				ks.SubaccountsKeeper.SetSubaccount(ctx, normalizeExpectedPerpetualSubaccount(s))
 			}
 
 			ks.ClobKeeper.DaemonLiquidationInfo.UpdateSubaccountsWithPositions(
@@ -2263,7 +2263,7 @@ func TestPlacePerpetualLiquidation_Deleveraging(t *testing.T) {
 			}
 
 			for _, expectedSubaccount := range tc.expectedSubaccounts {
-				require.Equal(t, expectedSubaccount, ks.SubaccountsKeeper.GetSubaccount(ctx, *expectedSubaccount.GetId()))
+				require.Equal(t, normalizeExpectedPerpetualSubaccount(expectedSubaccount), ks.SubaccountsKeeper.GetSubaccount(ctx, *expectedSubaccount.GetId()))
 			}
 
 			require.Equal(

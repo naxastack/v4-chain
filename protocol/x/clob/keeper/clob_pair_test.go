@@ -1138,12 +1138,12 @@ func TestClobPairValidate(t *testing.T) {
 				SubticksPerTick:  1,
 				Status:           types.ClobPair_STATUS_ACTIVE,
 			},
-			expectedErr: "is not a perpetual CLOB",
+			expectedErr: "spot CLOB metadata cannot be nil",
 		},
 		{
 			desc: "Unsupported Status",
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 1,
 				SubticksPerTick:  1,
 				Status:           types.ClobPair_STATUS_PAUSED,
@@ -1153,7 +1153,7 @@ func TestClobPairValidate(t *testing.T) {
 		{
 			desc: "StepBaseQuantums <= 0",
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 0,
 				SubticksPerTick:  1,
 				Status:           types.ClobPair_STATUS_ACTIVE,
@@ -1163,7 +1163,7 @@ func TestClobPairValidate(t *testing.T) {
 		{
 			desc: "SubticksPerTick <= 0",
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 1,
 				SubticksPerTick:  0,
 				Status:           types.ClobPair_STATUS_ACTIVE,
@@ -1173,7 +1173,7 @@ func TestClobPairValidate(t *testing.T) {
 		{
 			desc: "Valid ClobPair",
 			clobPair: types.ClobPair{
-				Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+				Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 				StepBaseQuantums: 1,
 				SubticksPerTick:  1,
 				Status:           types.ClobPair_STATUS_ACTIVE,

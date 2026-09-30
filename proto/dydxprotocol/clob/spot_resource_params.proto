@@ -1,0 +1,13 @@
+syntax = "proto3";
+package dydxprotocol.clob;
+
+option go_package = "github.com/dydxprotocol/v4-chain/protocol/x/clob/types";
+
+// SpotResourceParams defines consensus limits for spot order lifecycle work.
+message SpotResourceParams {
+  // Maximum active spot long-term orders owned by one subaccount.
+  uint32 max_spot_stateful_orders_per_subaccount = 1;
+
+  // Maximum spot orders released by the delisting scheduler per block.
+  uint32 max_spot_delist_orders_per_block = 2;
+}

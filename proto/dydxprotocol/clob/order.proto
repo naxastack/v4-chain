@@ -240,6 +240,14 @@ message Order {
   // order.
   string order_router_address = 14
       [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // Maximum spot trading fee accepted by the signer, in parts per million.
+  // Must be zero for perpetual orders.
+  uint32 max_trading_fee_ppm = 15;
+
+  // Payment-asset epoch signed by spot short-term orders.
+  // Must be zero for spot long-term and perpetual orders.
+  uint64 order_epoch = 16;
 }
 
 // TwapParameters represents the necessary configuration for a TWAP order.

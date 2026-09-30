@@ -577,6 +577,7 @@ func TestHydrationWithMatchPreBlocker(t *testing.T) {
 				big.NewInt(0),
 			),
 		},
+		AccountType: satypes.AccountType_ACCOUNT_TYPE_PERPETUAL,
 	}, carl)
 
 	dave := tApp.App.SubaccountsKeeper.GetSubaccount(ctx, constants.Dave_Num0)
@@ -596,6 +597,7 @@ func TestHydrationWithMatchPreBlocker(t *testing.T) {
 				big.NewInt(0),
 			),
 		},
+		AccountType: satypes.AccountType_ACCOUNT_TYPE_PERPETUAL,
 	}, dave)
 
 	require.Empty(t, tApp.App.ClobKeeper.MemClob.GetOperationsRaw(ctx))

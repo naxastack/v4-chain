@@ -140,7 +140,8 @@ func PromotionalParams() PerpetualFeeParams {
 // DefaultGenesis returns the default feetiers genesis state.
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
-		Params: PromotionalParams(),
+		Params:        PromotionalParams(),
+		SpotFeeParams: DefaultSpotFeeParams(),
 	}
 }
 
@@ -148,6 +149,10 @@ func DefaultGenesis() *GenesisState {
 // failure.
 func (gs GenesisState) Validate() error {
 	if err := gs.Params.Validate(); err != nil {
+		return err
+	}
+
+	if err := gs.SpotFeeParams.Validate(); err != nil {
 		return err
 	}
 

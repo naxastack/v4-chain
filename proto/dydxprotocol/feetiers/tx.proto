@@ -16,6 +16,10 @@ service Msg {
   rpc UpdatePerpetualFeeParams(MsgUpdatePerpetualFeeParams)
       returns (MsgUpdatePerpetualFeeParamsResponse);
 
+  // UpdateSpotFeeParams updates the SpotFeeParams in state.
+  rpc UpdateSpotFeeParams(MsgUpdateSpotFeeParams)
+      returns (MsgUpdateSpotFeeParamsResponse);
+
   // SetMarketFeeDiscountParams sets or updates PerMarketFeeDiscountParams for
   // specific CLOB pairs.
   rpc SetMarketFeeDiscountParams(MsgSetMarketFeeDiscountParams)
@@ -38,6 +42,16 @@ message MsgUpdatePerpetualFeeParams {
 // MsgUpdatePerpetualFeeParamsResponse is the Msg/UpdatePerpetualFeeParams
 // response type.
 message MsgUpdatePerpetualFeeParamsResponse {}
+
+// MsgUpdateSpotFeeParams is the Msg/UpdateSpotFeeParams request type.
+message MsgUpdateSpotFeeParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  SpotFeeParams spot_fee_params = 2 [ (gogoproto.nullable) = false ];
+}
+
+// MsgUpdateSpotFeeParamsResponse is the response type for updating spot fee parameters.
+message MsgUpdateSpotFeeParamsResponse {}
 
 // MsgSetMarketFeeDiscountParams is the Msg/SetMarketFeeDiscountParams
 // request type.

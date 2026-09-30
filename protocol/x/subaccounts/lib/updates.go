@@ -349,7 +349,8 @@ func CalculateUpdatedSubaccount(
 		settledUpdate.PerpetualUpdates,
 		perpInfos,
 	)
-	if result.AccountType == types.AccountType_ACCOUNT_TYPE_UNSPECIFIED && len(result.PerpetualPositions) > 0 {
+	if result.AccountType == types.AccountType_ACCOUNT_TYPE_UNSPECIFIED &&
+		(len(settledUpdate.SettledSubaccount.PerpetualPositions) > 0 || len(result.PerpetualPositions) > 0) {
 		result.AccountType = types.AccountType_ACCOUNT_TYPE_PERPETUAL
 	}
 	return result

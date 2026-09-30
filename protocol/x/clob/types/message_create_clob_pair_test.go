@@ -25,14 +25,14 @@ func TestMsgCreateClobPair_ValidateBasic(t *testing.T) {
 					Status:           types.ClobPair_STATUS_ACTIVE,
 				},
 			},
-			expectedErr: "is not a perpetual CLOB",
+			expectedErr: "spot CLOB metadata cannot be nil",
 		},
 		{
 			desc: "Empty authority",
 			msg: types.MsgCreateClobPair{
 				Authority: "",
 				ClobPair: types.ClobPair{
-					Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+					Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 					StepBaseQuantums: 1,
 					SubticksPerTick:  1,
 					Status:           types.ClobPair_STATUS_ACTIVE,
@@ -45,7 +45,7 @@ func TestMsgCreateClobPair_ValidateBasic(t *testing.T) {
 			msg: types.MsgCreateClobPair{
 				Authority: lib.GovModuleAddress.String(),
 				ClobPair: types.ClobPair{
-					Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+					Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 					StepBaseQuantums: 1,
 					SubticksPerTick:  1,
 					Status:           types.ClobPair_STATUS_PAUSED,
@@ -58,7 +58,7 @@ func TestMsgCreateClobPair_ValidateBasic(t *testing.T) {
 			msg: types.MsgCreateClobPair{
 				Authority: lib.GovModuleAddress.String(),
 				ClobPair: types.ClobPair{
-					Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+					Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 					StepBaseQuantums: 0,
 					SubticksPerTick:  1,
 					Status:           types.ClobPair_STATUS_ACTIVE,
@@ -71,7 +71,7 @@ func TestMsgCreateClobPair_ValidateBasic(t *testing.T) {
 			msg: types.MsgCreateClobPair{
 				Authority: lib.GovModuleAddress.String(),
 				ClobPair: types.ClobPair{
-					Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+					Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 					StepBaseQuantums: 1,
 					SubticksPerTick:  0,
 					Status:           types.ClobPair_STATUS_ACTIVE,
@@ -84,7 +84,7 @@ func TestMsgCreateClobPair_ValidateBasic(t *testing.T) {
 			msg: types.MsgCreateClobPair{
 				Authority: lib.GovModuleAddress.String(),
 				ClobPair: types.ClobPair{
-					Metadata:         &types.ClobPair_PerpetualClobMetadata{},
+					Metadata:         &types.ClobPair_PerpetualClobMetadata{PerpetualClobMetadata: &types.PerpetualClobMetadata{}},
 					StepBaseQuantums: 1,
 					SubticksPerTick:  1,
 					Status:           types.ClobPair_STATUS_ACTIVE,

@@ -55,7 +55,9 @@ func getValidGenesisStr() string {
 	gs += `{"limit":1000,"usd_tnc_required":"100000"}],"stateful_order_equity_tiers":[`
 	gs += `{"limit":0,"usd_tnc_required":"0"},{"limit":1,"usd_tnc_required":"20"},`
 	gs += `{"limit":5,"usd_tnc_required":"100"},{"limit":10,"usd_tnc_required":"1000"},`
-	gs += `{"limit":100,"usd_tnc_required":"10000"},{"limit":200,"usd_tnc_required":"100000"}]}}`
+	gs += `{"limit":100,"usd_tnc_required":"10000"},{"limit":200,"usd_tnc_required":"100000"}]},`
+	gs += `"spot_resource_params":{"max_spot_stateful_orders_per_subaccount":100,`
+	gs += `"max_spot_delist_orders_per_block":100}}`
 	return gs
 }
 
@@ -150,7 +152,7 @@ func TestAppModuleBasic_RegisterInterfaces(t *testing.T) {
 	// due to it using an unexported method on the interface thus we use reflection to access the field
 	// directly that contains the registrations.
 	fv := reflect.ValueOf(registry).Elem().FieldByName("implInterfaces")
-	require.Len(t, fv.MapKeys(), 20)
+	require.Len(t, fv.MapKeys(), 22)
 }
 
 func TestAppModuleBasic_DefaultGenesis(t *testing.T) {
@@ -171,7 +173,9 @@ func TestAppModuleBasic_DefaultGenesis(t *testing.T) {
 	expected += `{"max_leverage_updates_per_n_blocks":[],`
 	expected += `"max_short_term_orders_and_cancels_per_n_blocks":[],"max_stateful_orders_per_n_blocks":[],`
 	expected += `"max_short_term_order_cancellations_per_n_blocks":[],"max_short_term_orders_per_n_blocks":[]},`
-	expected += `"equity_tier_limit_config":{"short_term_order_equity_tiers":[], "stateful_order_equity_tiers":[]}}`
+	expected += `"equity_tier_limit_config":{"short_term_order_equity_tiers":[], "stateful_order_equity_tiers":[]},`
+	expected += `"spot_resource_params":{"max_spot_stateful_orders_per_subaccount":100,`
+	expected += `"max_spot_delist_orders_per_block":100},"stateful_spot_reservations":[]}`
 
 	require.JSONEq(t, expected, string(json))
 }
@@ -342,6 +346,10 @@ func TestAppModule_InitExportGenesis(t *testing.T) {
 	require.Equal(t, uint64(100_000_000_000_000), liquidationsConfig.SubaccountBlockLimits.MaxNotionalLiquidated)
 	require.Equal(t, uint64(100_000_000_000_000), liquidationsConfig.SubaccountBlockLimits.MaxQuantumsInsuranceLost)
 
+	spotResourceParams := keeper.GetSpotResourceParams(ctx)
+	require.Equal(t, uint32(100), spotResourceParams.MaxSpotStatefulOrdersPerSubaccount)
+	require.Equal(t, uint32(100), spotResourceParams.MaxSpotDelistOrdersPerBlock)
+
 	blockRateLimitConfig := keeper.GetBlockRateLimitConfiguration(ctx)
 	require.Equal(
 		t,
@@ -447,7 +455,9 @@ func TestAppModule_InitExportGenesis(t *testing.T) {
 	expected += `{"limit":1000,"usd_tnc_required":"100000"}],"stateful_order_equity_tiers":[`
 	expected += `{"limit":0,"usd_tnc_required":"0"},{"limit":1,"usd_tnc_required":"20"},`
 	expected += `{"limit":5,"usd_tnc_required":"100"},{"limit":10,"usd_tnc_required":"1000"},`
-	expected += `{"limit":100,"usd_tnc_required":"10000"},{"limit":200,"usd_tnc_required":"100000"}]}}`
+	expected += `{"limit":100,"usd_tnc_required":"10000"},{"limit":200,"usd_tnc_required":"100000"}]},`
+	expected += `"spot_resource_params":{"max_spot_stateful_orders_per_subaccount":100,`
+	expected += `"max_spot_delist_orders_per_block":100},"stateful_spot_reservations":[]}`
 	require.JSONEq(t, expected, string(genesisJson))
 }
 

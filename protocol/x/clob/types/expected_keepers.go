@@ -10,6 +10,7 @@ import (
 	affiliatetypes "github.com/dydxprotocol/v4-chain/protocol/x/affiliates/types"
 	assettypes "github.com/dydxprotocol/v4-chain/protocol/x/assets/types"
 	blocktimetypes "github.com/dydxprotocol/v4-chain/protocol/x/blocktime/types"
+	feetiertypes "github.com/dydxprotocol/v4-chain/protocol/x/feetiers/types"
 	perpetualsmoduletypes "github.com/dydxprotocol/v4-chain/protocol/x/perpetuals/types"
 	pricestypes "github.com/dydxprotocol/v4-chain/protocol/x/prices/types"
 	revsharetypes "github.com/dydxprotocol/v4-chain/protocol/x/revshare/types"
@@ -68,6 +69,18 @@ type SubaccountsKeeper interface {
 		successPerUpdate []satypes.UpdateResult,
 		err error,
 	)
+	ReserveStatefulSpotQuantums(
+		ctx sdk.Context,
+		id satypes.SubaccountId,
+		assetId uint32,
+		amount *big.Int,
+	) error
+	ReleaseStatefulSpotQuantums(
+		ctx sdk.Context,
+		id satypes.SubaccountId,
+		assetId uint32,
+		amount *big.Int,
+	) error
 	SetNegativeTncSubaccountSeenAtBlock(
 		ctx sdk.Context,
 		perpetualId uint32,
@@ -133,6 +146,7 @@ type SubaccountsKeeper interface {
 
 type AssetsKeeper interface {
 	GetAsset(ctx sdk.Context, id uint32) (val assettypes.Asset, exists bool)
+	ValidateAssetForSpotTrading(ctx sdk.Context, assetId uint32) error
 }
 
 type BlockTimeKeeper interface {
@@ -141,6 +155,7 @@ type BlockTimeKeeper interface {
 
 type FeeTiersKeeper interface {
 	GetPerpetualFeePpm(ctx sdk.Context, address string, isTaker bool, feeTierOverrideIdx uint32, clobPairId uint32) int32
+	GetSpotFeeParams(ctx sdk.Context) feetiertypes.SpotFeeParams
 }
 
 type PerpetualsKeeper interface {

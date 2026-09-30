@@ -28,6 +28,7 @@ type ClobKeeper interface {
 	) (success []uint32, failure []uint32, err error)
 	CancelShortTermOrder(ctx sdk.Context, msg *MsgCancelOrder) error
 	CancelStatefulOrder(ctx sdk.Context, msg *MsgCancelOrder) error
+	CreateSpotClobPair(ctx sdk.Context, clobPair ClobPair) (ClobPair, error)
 	CreatePerpetualClobPair(
 		ctx sdk.Context,
 		clobPairId uint32,
@@ -133,6 +134,8 @@ type ClobKeeper interface {
 	GetBlockRateLimitConfiguration(
 		ctx sdk.Context,
 	) (config BlockRateLimitConfiguration)
+	GetSpotResourceParams(ctx sdk.Context) SpotResourceParams
+	SetSpotResourceParams(ctx sdk.Context, params SpotResourceParams) error
 	InitializeEquityTierLimit(ctx sdk.Context, config EquityTierLimitConfiguration) error
 	Logger(ctx sdk.Context) log.Logger
 	UpdateClobPair(

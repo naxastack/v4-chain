@@ -400,3 +400,37 @@ func NewSubaccountsKeeper(t interface {
 
 	return mock
 }
+
+// ReserveStatefulSpotQuantums provides a mock function with given fields: ctx, id, assetId, amount
+func (_m *SubaccountsKeeper) ReserveStatefulSpotQuantums(
+	ctx types.Context,
+	id subaccountstypes.SubaccountId,
+	assetId uint32,
+	amount *big.Int,
+) error {
+	ret := _m.Called(ctx, id, assetId, amount)
+	if len(ret) == 0 {
+		panic("no return value specified for ReserveStatefulSpotQuantums")
+	}
+	if rf, ok := ret.Get(0).(func(types.Context, subaccountstypes.SubaccountId, uint32, *big.Int) error); ok {
+		return rf(ctx, id, assetId, amount)
+	}
+	return ret.Error(0)
+}
+
+// ReleaseStatefulSpotQuantums provides a mock function with given fields: ctx, id, assetId, amount
+func (_m *SubaccountsKeeper) ReleaseStatefulSpotQuantums(
+	ctx types.Context,
+	id subaccountstypes.SubaccountId,
+	assetId uint32,
+	amount *big.Int,
+) error {
+	ret := _m.Called(ctx, id, assetId, amount)
+	if len(ret) == 0 {
+		panic("no return value specified for ReleaseStatefulSpotQuantums")
+	}
+	if rf, ok := ret.Get(0).(func(types.Context, subaccountstypes.SubaccountId, uint32, *big.Int) error); ok {
+		return rf(ctx, id, assetId, amount)
+	}
+	return ret.Error(0)
+}

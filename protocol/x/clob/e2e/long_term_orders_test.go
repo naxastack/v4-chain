@@ -1427,7 +1427,7 @@ func TestPlaceLongTermOrder(t *testing.T) {
 			// Verify subaccounts
 			for _, expectedSubaccount := range tc.expectedSubaccounts {
 				subaccount := tApp.App.SubaccountsKeeper.GetSubaccount(ctx, *expectedSubaccount.Id)
-				require.Equal(t, expectedSubaccount, subaccount)
+				requirePerpetualSubaccountEqual(t, expectedSubaccount, subaccount)
 			}
 		})
 	}
@@ -1827,7 +1827,7 @@ func TestRegression_InvalidTimeInForce(t *testing.T) {
 			// Verify subaccounts
 			for _, expectedSubaccount := range tc.expectedSubaccounts {
 				subaccount := tApp.App.SubaccountsKeeper.GetSubaccount(ctx, *expectedSubaccount.Id)
-				require.Equal(t, expectedSubaccount, subaccount)
+				requirePerpetualSubaccountEqual(t, expectedSubaccount, subaccount)
 			}
 		})
 	}
@@ -2033,7 +2033,7 @@ func TestMultiplePlaceOrdersInSingleTransaction(t *testing.T) {
 				// Verify subaccounts
 				for _, expectedSubaccount := range tc.expectedSubaccounts {
 					subaccount := tApp.App.SubaccountsKeeper.GetSubaccount(ctx, *expectedSubaccount.Id)
-					require.Equal(t, expectedSubaccount, subaccount)
+					requirePerpetualSubaccountEqual(t, expectedSubaccount, subaccount)
 				}
 			},
 		)

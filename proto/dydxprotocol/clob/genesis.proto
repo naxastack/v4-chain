@@ -6,6 +6,8 @@ import "dydxprotocol/clob/block_rate_limit_config.proto";
 import "dydxprotocol/clob/clob_pair.proto";
 import "dydxprotocol/clob/equity_tier_limit_config.proto";
 import "dydxprotocol/clob/liquidations_config.proto";
+import "dydxprotocol/clob/spot_resource_params.proto";
+import "dydxprotocol/clob/stateful_spot_reservation.proto";
 
 option go_package = "github.com/dydxprotocol/v4-chain/protocol/x/clob/types";
 
@@ -16,5 +18,10 @@ message GenesisState {
   BlockRateLimitConfiguration block_rate_limit_config = 3
       [ (gogoproto.nullable) = false ];
   EquityTierLimitConfiguration equity_tier_limit_config = 4
+      [ (gogoproto.nullable) = false ];
+  SpotResourceParams spot_resource_params = 5
+      [ (gogoproto.nullable) = false ];
+  // StatefulSpotReservations contains all active spot long-term reservations.
+  repeated StatefulSpotReservation stateful_spot_reservations = 6
       [ (gogoproto.nullable) = false ];
 }

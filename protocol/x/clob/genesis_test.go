@@ -199,10 +199,10 @@ func TestGenesis(t *testing.T) {
 					SubaccountBlockLimits: constants.SubaccountBlockLimits_Default,
 				},
 			},
-			expectedErr:     "Asset orders are not implemented",
+			expectedErr:     "unsupported CLOB pair metadata",
 			expectedErrType: types.ErrInvalidClobPairParameter,
 		},
-		"Genesis state is invalid when there is a spot metadata on a CLOB pair": {
+		"Genesis state is invalid when a spot CLOB pair uses a non-USDC quote asset": {
 			genesis: types.GenesisState{
 				ClobPairs: []types.ClobPair{
 					{
@@ -239,7 +239,7 @@ func TestGenesis(t *testing.T) {
 					SubaccountBlockLimits: constants.SubaccountBlockLimits_Default,
 				},
 			},
-			expectedErr:     "Asset orders are not implemented",
+			expectedErr:     "spot CLOB pair 0 must use asset 0 as quote asset",
 			expectedErrType: types.ErrInvalidClobPairParameter,
 		},
 		"Genesis state is invalid when spread to maintenance margin ratio ppm is 0": {
@@ -425,6 +425,9 @@ func TestGenesis(t *testing.T) {
 			mockIndexerEventManager := &mocks.IndexerEventManager{}
 			ks := keepertest.NewClobKeepersTestContext(t, memClob, &mocks.BankKeeper{}, mockIndexerEventManager)
 			ctx := ks.Ctx.WithBlockTime(constants.TimeT)
+			if tc.genesis.SpotResourceParams == (types.SpotResourceParams{}) {
+				tc.genesis.SpotResourceParams = types.DefaultSpotResourceParams()
+			}
 
 			ks.MarketMapKeeper.InitGenesis(ks.Ctx, constants.MarketMap_DefaultGenesisState)
 			prices.InitGenesis(ctx, *ks.PricesKeeper, constants.Prices_DefaultGenesisState)

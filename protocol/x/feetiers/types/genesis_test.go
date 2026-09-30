@@ -18,6 +18,7 @@ func TestGenesisState_Validate(t *testing.T) {
 		},
 		"valid genesis state": {
 			genState: &types.GenesisState{
+				SpotFeeParams: types.DefaultSpotFeeParams(),
 				Params: types.PerpetualFeeParams{
 					Tiers: []*types.PerpetualFeeTier{
 						{},

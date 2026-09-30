@@ -305,6 +305,22 @@ func (k Keeper) MustRemoveStatefulOrder(
 	ctx sdk.Context,
 	orderId types.OrderId,
 ) {
+	if k.HasStatefulSpotReservation(ctx, orderId) {
+		k.mustReleaseStatefulSpotOrder(ctx, orderId)
+		return
+	}
+	if order, found := k.getOrderFromStore(ctx, orderId); found {
+		if pair, pairFound := k.GetClobPair(ctx, types.ClobPairId(order.GetClobPairId())); pairFound && pair.GetSpotClobMetadata() != nil {
+			panic(fmt.Sprintf("MustRemoveStatefulOrder: spot order %v has no reservation", orderId))
+		}
+	}
+	k.mustRemoveStatefulOrder(ctx, orderId)
+}
+
+func (k Keeper) mustRemoveStatefulOrder(
+	ctx sdk.Context,
+	orderId types.OrderId,
+) {
 	// If this is a Short-Term order, panic.
 	orderId.MustBeStatefulOrder()
 
