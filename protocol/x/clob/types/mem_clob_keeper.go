@@ -118,4 +118,5 @@ type MemClobKeeper interface {
 		order PendingOpenOrder,
 	) satypes.UpdateResult
 	MaybeValidateAuthenticators(ctx sdk.Context, txBytes []byte) error
+	GetSpotCandidateState(ctx sdk.Context, order Order) (SpotCandidateState, error)
 }

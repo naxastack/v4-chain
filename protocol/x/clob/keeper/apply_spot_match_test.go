@@ -407,6 +407,69 @@ func TestProcessInternalOperationsContinuesAfterSkippedSpotMatch(t *testing.T) {
 	}, matchEvents.OrderIdsFilledInLastBlock)
 }
 
+func TestCompetingSpotShortTermProposalIsDeterministicAcrossNodes(t *testing.T) {
+	type outcome struct {
+		statuses    []types.OperationExecutionStatus
+		skipReasons []types.SpotOperationSkipReason
+		quote       int64
+		base        int64
+	}
+	runNode := func(t *testing.T) outcome {
+		f := newSpotSettlementFixture(t, 10, 30, 20)
+		f.keepers.ClobKeeper.MustRemoveStatefulOrder(f.ctx, f.buyerOrder.OrderId)
+		firstBuyer := makeSpotShortTermOrder(f, f.buyerOrder)
+		secondBuyer := firstBuyer
+		secondBuyer.OrderId.ClientId++
+
+		secondSellerId := satypes.SubaccountId{Owner: sampletest.AccAddress(), Number: 32}
+		f.keepers.SubaccountsKeeper.SetSubaccount(f.ctx, satypes.Subaccount{
+			Id: &secondSellerId, AccountType: satypes.AccountType_ACCOUNT_TYPE_SPOT,
+			AssetPositions: []*satypes.AssetPosition{{
+				AssetId: 1, Quantums: dtypes.NewInt(10), StatefulReservedQuantums: dtypes.ZeroInt(),
+			}},
+		})
+		secondSeller := spotReservationTestOrder(secondSellerId, 32)
+		secondSeller.Side = types.Order_SIDE_SELL
+		require.NoError(t, f.keepers.ClobKeeper.PlaceStatefulOrder(
+			f.ctx, &types.MsgPlaceOrder{Order: secondSeller}, true,
+		))
+
+		operations := []types.InternalOperation{
+			types.NewShortTermOrderPlacementInternalOperation(firstBuyer),
+			types.NewMatchOrdersInternalOperation(
+				firstBuyer,
+				[]types.MakerFill{{MakerOrderId: f.sellerOrder.OrderId, FillAmount: 10}},
+			),
+			types.NewShortTermOrderPlacementInternalOperation(secondBuyer),
+			types.NewMatchOrdersInternalOperation(
+				secondBuyer,
+				[]types.MakerFill{{MakerOrderId: secondSeller.OrderId, FillAmount: 10}},
+			),
+		}
+		results, err := f.keepers.ClobKeeper.ProcessInternalOperationsWithResults(f.ctx, operations)
+		require.NoError(t, err)
+		require.Len(t, results, 4)
+		buyer := f.keepers.SubaccountsKeeper.GetSubaccount(f.ctx, f.buyerId)
+		return outcome{
+			statuses:    []types.OperationExecutionStatus{results[1].Status, results[3].Status},
+			skipReasons: []types.SpotOperationSkipReason{results[1].SkipReason, results[3].SkipReason},
+			quote:       requireAssetPosition(t, buyer, 0).GetBigQuantums().Int64(),
+			base:        requireAssetPosition(t, buyer, 1).GetBigQuantums().Int64(),
+		}
+	}
+
+	nodeA := runNode(t)
+	nodeB := runNode(t)
+	require.Equal(t, nodeA, nodeB)
+	require.Equal(t, []types.OperationExecutionStatus{
+		types.OperationExecutionStatusApplied,
+		types.OperationExecutionStatusSkipped,
+	}, nodeA.statuses)
+	require.Equal(t, []types.SpotOperationSkipReason{"", types.SpotOperationSkipReasonInsufficientBalance}, nodeA.skipReasons)
+	require.Equal(t, int64(9), nodeA.quote)
+	require.Equal(t, int64(10), nodeA.base)
+}
+
 func TestProcessSpotSingleMatchOrderTypeMatrix(t *testing.T) {
 	tests := []struct {
 		name       string

@@ -39,6 +39,10 @@ type MemClobPriceTimePriority struct {
 	// OperationsToPropose struct for proposing operations in the next block.
 	operationsToPropose types.OperationsToPropose
 
+	// Node-local payment reservations for spot short-term candidates. This state
+	// is not persisted and must never be used as a consensus input.
+	spotCandidateLedger *SpotCandidateLedger
+
 	// A reference to an expected clob keeper.
 	clobKeeper types.MemClobKeeper
 
@@ -60,6 +64,7 @@ func NewMemClobPriceTimePriority(
 	return &MemClobPriceTimePriority{
 		orderbooks:               make(map[types.ClobPairId]*Orderbook),
 		operationsToPropose:      *types.NewOperationsToPropose(),
+		spotCandidateLedger:      NewDefaultSpotCandidateLedger(),
 		generateOffchainUpdates:  generateOffchainUpdates,
 		generateOrderbookUpdates: false,
 	}
@@ -129,6 +134,10 @@ func (m *MemClobPriceTimePriority) CancelOrder(
 	if levelOrder, orderExists := orderbook.orderIdToLevelOrder[orderIdToCancel]; orderExists &&
 		goodTilBlock >= levelOrder.Value.Order.GetGoodTilBlock() {
 		m.mustRemoveOrder(ctx, orderIdToCancel)
+		if reservation, found := m.spotCandidateLedger.Get(orderIdToCancel); found &&
+			!reservation.PendingConfirmation {
+			m.spotCandidateLedger.Remove(orderIdToCancel)
+		}
 
 		telemetry.IncrCounter(1, types.ModuleName, metrics.CancelShortTermOrder, metrics.RemovedFromOrderBook)
 	}
@@ -382,6 +391,7 @@ func (m *MemClobPriceTimePriority) mustUpdateMemclobStateWithMatches(
 				matchedMakerOrder,
 			))
 		}
+		m.spotCandidateLedger.MarkPendingConfirmation(matchedMakerOrder.OrderId)
 
 		// Update the orderbook state to reflect the maker order was matched.
 		matchOffchainUpdates := m.mustUpdateOrderbookStateWithMatchedMakerOrder(
@@ -535,6 +545,16 @@ func (m *MemClobPriceTimePriority) PlaceOrder(
 	if err := m.validateNewOrder(ctx, order); err != nil {
 		return 0, 0, offchainUpdates, err
 	}
+	restoreSpotCandidate, err := m.reserveSpotCandidate(ctx, order)
+	if err != nil {
+		return 0, 0, offchainUpdates, err
+	}
+	retainSpotCandidate := false
+	defer func() {
+		if !retainSpotCandidate {
+			restoreSpotCandidate()
+		}
+	}()
 
 	if m.generateOffchainUpdates {
 		// Send an order place message.
@@ -604,6 +624,10 @@ func (m *MemClobPriceTimePriority) PlaceOrder(
 
 	// If the status of the taker order is not successful, do not attempt to add the order to the orderbook.
 	if !takerOrderStatus.OrderStatus.IsSuccess() {
+		if orderSizeOptimisticallyFilledFromMatchingQuantums > 0 {
+			m.spotCandidateLedger.MarkPendingConfirmation(order.OrderId)
+			retainSpotCandidate = true
+		}
 		if m.generateOffchainUpdates {
 			// Send an off-chain update message indicating the order should be removed from the orderbook
 			// on the Indexer.
@@ -642,6 +666,10 @@ func (m *MemClobPriceTimePriority) PlaceOrder(
 
 	// If the order has no remaining size, we do not have to add the order to the orderbook and we can return early.
 	if remainingSize == 0 {
+		if orderSizeOptimisticallyFilledFromMatchingQuantums > 0 {
+			m.spotCandidateLedger.MarkPendingConfirmation(order.OrderId)
+			retainSpotCandidate = true
+		}
 		// If the status of the taker order after matching is success and the order has no remaining size, send an
 		// off-chain message with the total filled size of the order equal to the size of the order.
 		// This is needed to account for the case where an order was partially matched, rewound, then was fully matched
@@ -660,6 +688,10 @@ func (m *MemClobPriceTimePriority) PlaceOrder(
 
 	// If this is an IOC order, cancel the remaining size since IOC orders cannot be maker orders.
 	if order.GetTimeInForce() == types.Order_TIME_IN_FORCE_IOC {
+		if orderSizeOptimisticallyFilledFromMatchingQuantums > 0 {
+			m.spotCandidateLedger.MarkPendingConfirmation(order.OrderId)
+			retainSpotCandidate = true
+		}
 		orderStatus := types.ImmediateOrCancelWouldRestOnBook
 		if m.generateOffchainUpdates {
 			// Send an off-chain update message indicating the order should be removed from the orderbook
@@ -698,6 +730,10 @@ func (m *MemClobPriceTimePriority) PlaceOrder(
 
 	// Add the order to the orderbook and all other bookkeeping data structures.
 	m.mustAddOrderToOrderbook(ctx, order, false)
+	if orderSizeOptimisticallyFilledFromMatchingQuantums > 0 {
+		m.spotCandidateLedger.MarkPendingConfirmation(order.OrderId)
+	}
+	retainSpotCandidate = true
 
 	// If the taker order is added to the orderbook successfully, send an off-chain message with
 	// the total filled size of the order (size of order - remaining size).
@@ -1229,6 +1265,11 @@ func (m *MemClobPriceTimePriority) RemoveAndClearOperationsQueue(
 		metrics.RemoveAndClearOperationsQueue,
 		metrics.Latency,
 	)
+
+	// Candidate reservations, optimistic fills, and pending-confirmation flags
+	// are derived node-local state. Discard them before replay so only final
+	// consensus state and the saved operations/TxBytes determine the rebuild.
+	m.spotCandidateLedger.Reset()
 
 	// Clear the OTP. This will also remove nonces for every operation in `operationsQueueCopy`.
 	m.operationsToPropose.ClearOperationsQueue()

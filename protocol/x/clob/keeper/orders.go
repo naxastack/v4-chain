@@ -470,6 +470,14 @@ func (k Keeper) ReplayPlaceOrder(
 	err error,
 ) {
 	order := msg.GetOrder()
+	if order.IsShortTermOrder() {
+		decodedMsg, decodeErr := k.DecodeShortTermOrderFromTxBytes(ctx.TxBytes(), order)
+		if decodeErr != nil {
+			return 0, 0, nil, decodeErr
+		}
+		msg = decodedMsg
+		order = msg.GetOrder()
+	}
 
 	// Use the height of the next block. Check if this order would be valid if it were included
 	// in the next block height, not in the block that was already committed.

@@ -182,3 +182,18 @@ func TestRemoveAndClearOperationsQueue(t *testing.T) {
 		})
 	}
 }
+
+func TestRemoveAndClearOperationsQueueResetsSpotCandidateLedger(t *testing.T) {
+	ctx, _, _ := sdktest.NewSdkContextWithMultistore()
+	ctx = ctx.WithIsCheckTx(true)
+	memClob := NewMemClobPriceTimePriority(false)
+	orderId := spotCandidateTestOrderId("alice", 0, 1)
+	require.NoError(t, memClob.spotCandidateLedger.Upsert(
+		spotCandidateTestReservation(orderId, 0, 3, []byte{1, 2}),
+	))
+	require.True(t, memClob.spotCandidateLedger.MarkPendingConfirmation(orderId))
+
+	memClob.RemoveAndClearOperationsQueue(ctx, nil)
+	require.Zero(t, memClob.spotCandidateLedger.OrderCount())
+	require.Zero(t, memClob.spotCandidateLedger.CandidateBytes())
+}

@@ -307,6 +307,22 @@ func (_m *MemClobKeeper) MaybeValidateAuthenticators(ctx types.Context, txBytes 
 	return r0
 }
 
+// GetSpotCandidateState provides a mock function with given fields: ctx, order
+func (_m *MemClobKeeper) GetSpotCandidateState(ctx types.Context, order clobtypes.Order) (clobtypes.SpotCandidateState, error) {
+	ret := _m.Called(ctx, order)
+	if len(ret) == 0 {
+		panic("no return value specified for GetSpotCandidateState")
+	}
+	if rf, ok := ret.Get(0).(func(types.Context, clobtypes.Order) (clobtypes.SpotCandidateState, error)); ok {
+		return rf(ctx, order)
+	}
+	var state clobtypes.SpotCandidateState
+	if ret.Get(0) != nil {
+		state = ret.Get(0).(clobtypes.SpotCandidateState)
+	}
+	return state, ret.Error(1)
+}
+
 // OffsetSubaccountPerpetualPosition provides a mock function with given fields: ctx, liquidatedSubaccountId, perpetualId, deltaQuantumsTotal, isFinalSettlement
 func (_m *MemClobKeeper) OffsetSubaccountPerpetualPosition(ctx types.Context, liquidatedSubaccountId subaccountstypes.SubaccountId, perpetualId uint32, deltaQuantumsTotal *big.Int, isFinalSettlement bool) ([]clobtypes.MatchPerpetualDeleveraging_Fill, *big.Int) {
 	ret := _m.Called(ctx, liquidatedSubaccountId, perpetualId, deltaQuantumsTotal, isFinalSettlement)

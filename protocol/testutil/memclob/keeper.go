@@ -31,6 +31,7 @@ type FakeMemClobKeeper struct {
 	statePositionFn                      types.GetStatePositionFn
 	useCollatCheckFnForSingleMatch       bool
 	indexerEventManager                  indexer_manager.IndexerEventManager
+	spotCandidateStateFn                 func(sdk.Context, types.Order) (types.SpotCandidateState, error)
 }
 
 func NewFakeMemClobKeeper() *FakeMemClobKeeper {
@@ -48,7 +49,35 @@ func NewFakeMemClobKeeper() *FakeMemClobKeeper {
 		dirtyTimeToStatefulOrdersExpiring:    make(map[time.Time][]types.OrderId),
 		nextTransactionIndex:                 0,
 		subaccountsToDeleverage:              make(map[satypes.SubaccountId]bool),
+		spotCandidateStateFn: func(_ sdk.Context, order types.Order) (types.SpotCandidateState, error) {
+			return types.SpotCandidateState{
+				ClobPair: types.ClobPair{
+					Id: uint32(order.GetClobPairId()),
+					Metadata: &types.ClobPair_SpotClobMetadata{SpotClobMetadata: &types.SpotClobMetadata{
+						BaseAssetId: 1, QuoteAssetId: 0,
+					}},
+					StepBaseQuantums: 1, SubticksPerTick: 1,
+				},
+				TotalQuantums:            new(big.Int).SetUint64(^uint64(0)),
+				StatefulReservedQuantums: new(big.Int),
+				CurrentOrderEpoch:        order.OrderEpoch,
+			}, nil
+		},
 	}
+}
+
+func (f *FakeMemClobKeeper) WithSpotCandidateStateFn(
+	fn func(sdk.Context, types.Order) (types.SpotCandidateState, error),
+) *FakeMemClobKeeper {
+	f.spotCandidateStateFn = fn
+	return f
+}
+
+func (f *FakeMemClobKeeper) GetSpotCandidateState(
+	ctx sdk.Context,
+	order types.Order,
+) (types.SpotCandidateState, error) {
+	return f.spotCandidateStateFn(ctx, order)
 }
 
 func (f *FakeMemClobKeeper) WithCollatCheckFnForProcessSingleMatch() *FakeMemClobKeeper {
