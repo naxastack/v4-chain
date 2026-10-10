@@ -188,7 +188,11 @@ func TestAppModuleBasic_GetTxCmd(t *testing.T) {
 
 	cmd := am.GetTxCmd()
 	require.Equal(t, "subaccounts", cmd.Use)
-	require.Equal(t, 0, len(cmd.Commands()))
+	var names []string
+	for _, child := range cmd.Commands() {
+		names = append(names, child.Name())
+	}
+	require.ElementsMatch(t, []string{"create-subaccount"}, names)
 }
 
 func TestAppModuleBasic_GetQueryCmd(t *testing.T) {
@@ -196,9 +200,11 @@ func TestAppModuleBasic_GetQueryCmd(t *testing.T) {
 
 	cmd := am.GetQueryCmd()
 	require.Equal(t, "subaccounts", cmd.Use)
-	require.Equal(t, 2, len(cmd.Commands()))
-	require.Equal(t, "list-subaccount", cmd.Commands()[0].Name())
-	require.Equal(t, "show-subaccount", cmd.Commands()[1].Name())
+	var names []string
+	for _, child := range cmd.Commands() {
+		names = append(names, child.Name())
+	}
+	require.ElementsMatch(t, []string{"list-subaccount", "show-subaccount", "spot-order-epoch"}, names)
 }
 
 func TestAppModule_Name(t *testing.T) {

@@ -44,6 +44,10 @@ Note, the '--from' flag is ignored as it is implied from [sender_key_or_address]
 			if err != nil {
 				return err
 			}
+			assetID, err := cmd.Flags().GetUint32(flagAssetID)
+			if err != nil {
+				return err
+			}
 
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -56,7 +60,7 @@ Note, the '--from' flag is ignored as it is implied from [sender_key_or_address]
 					Owner:  argRecipientOwner,
 					Number: argRecipientNumber,
 				},
-				assettypes.AssetUsdc.Id,
+				assetID,
 				argAmount,
 			)
 
@@ -87,6 +91,7 @@ Note, the '--from' flag is ignored as it is implied from [sender_key_or_address]
 
 	flags.AddTxFlagsToCmd(cmd)
 	customflags.AddTxPermissionedKeyFlagsToCmd(cmd)
+	cmd.Flags().Uint32(flagAssetID, assettypes.AssetUsdc.Id, "asset id to deposit; defaults to USDC")
 
 	return cmd
 }

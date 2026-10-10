@@ -40,7 +40,7 @@ func CmdCreateTransfer() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
+			assetID, err := cmd.Flags().GetUint32(flagAssetID)
 			if err != nil {
 				return err
 			}
@@ -60,7 +60,7 @@ func CmdCreateTransfer() *cobra.Command {
 						Owner:  argRecipientOwner,
 						Number: argRecipientNumber,
 					},
-					AssetId: assettypes.AssetUsdc.Id,
+					AssetId: assetID,
 					Amount:  argAmount,
 				},
 			)
@@ -92,6 +92,7 @@ func CmdCreateTransfer() *cobra.Command {
 
 	flags.AddTxFlagsToCmd(cmd)
 	customflags.AddTxPermissionedKeyFlagsToCmd(cmd)
+	cmd.Flags().Uint32(flagAssetID, assettypes.AssetUsdc.Id, "asset id to transfer; defaults to USDC")
 
 	return cmd
 }

@@ -101,7 +101,17 @@ func (k Keeper) getEquityTierLimitForSubaccount(
 // stateful orders. For `deliverState`, we sum:
 //   - the number of long term orders.
 //   - the number of conditional orders.
+func (k Keeper) orderUsesSpotPair(ctx sdk.Context, order types.Order) bool {
+	pair, found := k.GetClobPair(ctx, types.ClobPairId(order.OrderId.ClobPairId))
+	return found && pair.GetSpotClobMetadata() != nil
+}
+
 func (k Keeper) ValidateSubaccountEquityTierLimitForStatefulOrder(ctx sdk.Context, order types.Order) error {
+	// Spot orders are limited by the spot balance reservation, not perpetual net collateral.
+	// Pricing a base-asset position here fails as unimplemented multi-collateral.
+	if k.orderUsesSpotPair(ctx, order) {
+		return nil
+	}
 	equityTierLimits := k.GetEquityTierLimitConfiguration(ctx).StatefulOrderEquityTiers
 	if len(equityTierLimits) == 0 {
 		return nil
@@ -138,6 +148,9 @@ func (k Keeper) ValidateSubaccountEquityTierLimitForStatefulOrder(ctx sdk.Contex
 // the floor can still close its position; the memclob rejects reduce-only orders that would not reduce one.
 func (k Keeper) ValidateSubaccountEquityTierLimitForShortTermOrder(ctx sdk.Context, order types.Order) error {
 	if order.IsReduceOnly() {
+		return nil
+	}
+	if k.orderUsesSpotPair(ctx, order) {
 		return nil
 	}
 	subaccountId := order.GetSubaccountId()

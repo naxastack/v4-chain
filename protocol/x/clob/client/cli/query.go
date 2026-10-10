@@ -28,6 +28,12 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdGetLiquidationsConfiguration())
 	cmd.AddCommand(CmdQueryStatefulOrder())
 	cmd.AddCommand(CmdQueryLeverage())
+	cmd.AddCommand(CmdQuerySpotResourceParams())
+	cmd.AddCommand(CmdQuerySpotStatefulOrders())
+	cmd.AddCommand(CmdQueryStatefulSpotReservation())
+	cmd.AddCommand(CmdQuerySpotPairLifecycle())
+	cmd.AddCommand(CmdQuerySpotDelistCursor())
+	cmd.AddCommand(CmdQueryOrderFillAmount())
 
 	return cmd
 }

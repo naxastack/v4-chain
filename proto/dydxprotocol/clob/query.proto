@@ -11,6 +11,7 @@ import "dydxprotocol/clob/order.proto";
 import "dydxprotocol/clob/matches.proto";
 import "dydxprotocol/clob/liquidations_config.proto";
 import "dydxprotocol/clob/mev.proto";
+import "dydxprotocol/clob/genesis.proto";
 import "dydxprotocol/clob/spot_resource_params.proto";
 import "dydxprotocol/clob/stateful_spot_reservation.proto";
 import "dydxprotocol/indexer/off_chain_updates/off_chain_updates.proto";
@@ -76,6 +77,27 @@ service Query {
       returns (QuerySpotStatefulOrdersByClobPairResponse) {
     option (google.api.http).get =
         "/dydxprotocol/clob/spot_stateful_orders/{clob_pair_id}";
+  }
+
+  // Queries the pause source and final-settlement flag for one Spot pair.
+  rpc SpotPairLifecycle(QuerySpotPairLifecycleRequest)
+      returns (QuerySpotPairLifecycleResponse) {
+    option (google.api.http).get =
+        "/dydxprotocol/clob/spot_pair_lifecycle/{clob_pair_id}";
+  }
+
+  // Queries the long-term delist cursor for one Spot pair.
+  rpc SpotDelistCursor(QuerySpotDelistCursorRequest)
+      returns (QuerySpotDelistCursorResponse) {
+    option (google.api.http).get =
+        "/dydxprotocol/clob/spot_delist_cursor/{clob_pair_id}";
+  }
+
+  // Queries the current filled base quantums for one order.
+  rpc OrderFillAmount(QueryOrderFillAmountRequest)
+      returns (QueryOrderFillAmountResponse) {
+    option (google.api.http).get =
+        "/dydxprotocol/clob/order_fill_amount/{owner}/{number}/{client_id}/{clob_pair_id}/{order_flags}";
   }
 
   // Queries the stateful order for a given order id.
@@ -197,6 +219,36 @@ message QuerySpotStatefulOrdersByClobPairResponse {
   repeated OrderId order_ids = 1 [ (gogoproto.nullable) = false ];
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
+
+// QuerySpotPairLifecycleRequest selects one Spot CLOB pair.
+message QuerySpotPairLifecycleRequest { uint32 clob_pair_id = 1; }
+
+// QuerySpotPairLifecycleResponse is the current lifecycle record.
+message QuerySpotPairLifecycleResponse {
+  uint32 clob_pair_id = 1;
+  SpotPairPauseSource pause_source = 2;
+  bool final_settlement_started = 3;
+}
+
+// QuerySpotDelistCursorRequest selects one Spot CLOB pair.
+message QuerySpotDelistCursorRequest { uint32 clob_pair_id = 1; }
+
+// QuerySpotDelistCursorResponse contains the persisted delist cursor.
+message QuerySpotDelistCursorResponse {
+  SpotDelistCursor cursor = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryOrderFillAmountRequest identifies one order.
+message QueryOrderFillAmountRequest {
+  string owner = 1;
+  uint32 number = 2;
+  uint32 client_id = 3;
+  uint32 clob_pair_id = 4;
+  uint32 order_flags = 5;
+}
+
+// QueryOrderFillAmountResponse contains filled base quantums still in state.
+message QueryOrderFillAmountResponse { uint64 fill_amount = 1; }
 
 // QueryStatefulOrderRequest is a request message for StatefulOrder.
 message QueryStatefulOrderRequest {

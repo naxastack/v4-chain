@@ -152,6 +152,17 @@ func (k Keeper) processSpotSingleMatch(
 	k.setOrderFillAmountsAndPruning(cacheCtx, makerOrder, newMakerFill, makerPruneableBlockHeight)
 	k.setOrderFillAmountsAndPruning(cacheCtx, takerOrder, newTakerFill, takerPruneableBlockHeight)
 	write()
+	infoSpotOrder(
+		ctx,
+		takerOrder.OrderId,
+		"SPOT_SETTLEMENT_APPLIED",
+		"maker_order_id", makerOrder.OrderId,
+		"fill_base_quantums", matchWithOrders.FillAmount,
+		"base_asset_id", settlement.BaseAssetId,
+		"quote_asset_id", settlement.QuoteAssetId,
+		"maker_fee_quote_quantums", matchWithOrders.MakerFee,
+		"taker_fee_quote_quantums", matchWithOrders.TakerFee,
+	)
 	return true, takerResult, makerResult, zeroAffiliateShare, nil
 }
 

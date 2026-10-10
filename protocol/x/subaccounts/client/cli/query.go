@@ -23,6 +23,7 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 
 	cmd.AddCommand(CmdListSubaccount())
 	cmd.AddCommand(CmdShowSubaccount())
+	cmd.AddCommand(CmdQuerySpotOrderEpoch())
 
 	return cmd
 }

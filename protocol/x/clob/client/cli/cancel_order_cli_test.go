@@ -93,12 +93,13 @@ func (s *CancelOrderIntegrationTestSuite) SetupTest() {
 	s.cfg.MinGasPrices = fmt.Sprintf("0%s", sdk.DefaultBondDenom)
 
 	clobPair := constants.ClobPair_Btc
-	state := types.GenesisState{}
+	state := *types.DefaultGenesis()
 
 	state.ClobPairs = append(state.ClobPairs, clobPair)
 	state.LiquidationsConfig = types.LiquidationsConfig_Default
+	s.Require().NoError(state.Validate())
 
-	perpstate := perptypes.GenesisState{}
+	perpstate := *perptypes.DefaultGenesis()
 	perpstate.LiquidityTiers = constants.LiquidityTiers
 	perpstate.Params = constants.PerpetualsGenesisParams
 	perpetual := constants.BtcUsd_50PercentInitial_40PercentMaintenance
@@ -117,7 +118,7 @@ func (s *CancelOrderIntegrationTestSuite) SetupTest() {
 		constants.QuoteBalance_OneDollar*10_000,
 	)
 
-	sastate := satypes.GenesisState{}
+	sastate := *satypes.DefaultGenesis()
 	sastate.Subaccounts = append(
 		sastate.Subaccounts,
 		satypes.Subaccount{
@@ -141,8 +142,9 @@ func (s *CancelOrderIntegrationTestSuite) SetupTest() {
 	// Ensure that no funding payments will occur during this test.
 	epstate := constants.GenerateEpochGenesisStateWithoutFunding()
 
-	feeTiersState := feetierstypes.GenesisState{}
+	feeTiersState := feetierstypes.DefaultGenesis()
 	feeTiersState.Params = constants.PerpetualFeeParams
+	s.Require().NoError(feeTiersState.Validate())
 
 	epbuf, err := s.cfg.Codec.MarshalJSON(&epstate)
 	s.Require().NoError(err)
@@ -160,7 +162,7 @@ func (s *CancelOrderIntegrationTestSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.cfg.GenesisState[pricestypes.ModuleName] = pricesbuf
 
-	feeTiersBuf, err := s.cfg.Codec.MarshalJSON(&feeTiersState)
+	feeTiersBuf, err := s.cfg.Codec.MarshalJSON(feeTiersState)
 	s.Require().NoError(err)
 	s.cfg.GenesisState[feetierstypes.ModuleName] = feeTiersBuf
 

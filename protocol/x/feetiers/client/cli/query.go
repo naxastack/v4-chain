@@ -22,6 +22,7 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	}
 
 	cmd.AddCommand(CmdQueryPerpetualFeeParams())
+	cmd.AddCommand(CmdQuerySpotFeeParams())
 	cmd.AddCommand(CmdQueryUserFeeTier())
 	cmd.AddCommand(CmdQueryMarketFeeDiscountParams())
 	cmd.AddCommand(CmdQueryStakingTiers())

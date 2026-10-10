@@ -36,21 +36,16 @@ func (k Keeper) getValidSubaccountUpdatesForTransfer(
 		bigBalanceDelta.Neg(bigBalanceDelta)
 	}
 
-	if assetId == 0 {
-		updates = []types.Update{
-			{
-				SubaccountId: subaccountId,
-				AssetUpdates: []types.AssetUpdate{
-					{
-						AssetId:          assettypes.AssetUsdc.Id,
-						BigQuantumsDelta: bigBalanceDelta,
-					},
+	updates = []types.Update{
+		{
+			SubaccountId: subaccountId,
+			AssetUpdates: []types.AssetUpdate{
+				{
+					AssetId:          assetId,
+					BigQuantumsDelta: bigBalanceDelta,
 				},
 			},
-		}
-	} else {
-		// TODO(DEC-715): Support non-USDC assets.
-		return nil, types.ErrAssetTransferThroughBankNotImplemented
+		},
 	}
 
 	success, successPerUpdate, err := k.CanUpdateSubaccounts(ctx, updates, types.Transfer)

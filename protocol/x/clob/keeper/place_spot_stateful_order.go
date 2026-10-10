@@ -36,6 +36,14 @@ func (k Keeper) placeSpotStatefulOrder(ctx sdk.Context, order types.Order) error
 	if err != nil {
 		return err
 	}
+	debugSpotOrder(
+		ctx,
+		order.OrderId,
+		"SPOT_ORDER_VALIDATED",
+		"order_type", "stateful",
+		"outgoing_asset_id", assetId,
+		"reserved_quantums", required.String(),
+	)
 
 	cacheCtx, write := ctx.CacheContext()
 	if err := k.subaccountsKeeper.ReserveStatefulSpotQuantums(
@@ -60,5 +68,14 @@ func (k Keeper) placeSpotStatefulOrder(ctx sdk.Context, order types.Order) error
 		order.GetOrderId(),
 	)
 	write()
+	infoSpotOrder(
+		ctx,
+		order.OrderId,
+		"SPOT_RESERVATION_CREATED",
+		"outgoing_asset_id", assetId,
+		"reserved_quantums", required.String(),
+		"remaining_base_quantums", order.Quantums,
+	)
+	infoSpotOrder(ctx, order.OrderId, "SPOT_ORDER_ACCEPTED", "order_type", "stateful")
 	return nil
 }

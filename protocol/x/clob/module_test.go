@@ -247,11 +247,13 @@ func TestAppModuleBasic_GetTxCmd(t *testing.T) {
 
 	cmd := am.GetTxCmd()
 	require.Equal(t, "clob", cmd.Use)
-	require.Equal(t, 4, len(cmd.Commands()))
+	require.Equal(t, 6, len(cmd.Commands()))
 	require.Equal(t, "batch-cancel", cmd.Commands()[0].Name())
 	require.Equal(t, "cancel-order", cmd.Commands()[1].Name())
-	require.Equal(t, "place-order", cmd.Commands()[2].Name())
-	require.Equal(t, "update-leverage", cmd.Commands()[3].Name())
+	require.Equal(t, "cancel-spot-order", cmd.Commands()[2].Name())
+	require.Equal(t, "place-order", cmd.Commands()[3].Name())
+	require.Equal(t, "place-spot-order", cmd.Commands()[4].Name())
+	require.Equal(t, "update-leverage", cmd.Commands()[5].Name())
 }
 
 func TestAppModuleBasic_GetQueryCmd(t *testing.T) {
@@ -259,14 +261,20 @@ func TestAppModuleBasic_GetQueryCmd(t *testing.T) {
 
 	cmd := am.GetQueryCmd()
 	require.Equal(t, "clob", cmd.Use)
-	require.Equal(t, 7, len(cmd.Commands()))
+	require.Equal(t, 13, len(cmd.Commands()))
 	require.Equal(t, "get-block-rate-limit-config", cmd.Commands()[0].Name())
 	require.Equal(t, "get-equity-tier-limit-config", cmd.Commands()[1].Name())
 	require.Equal(t, "get-liquidations-config", cmd.Commands()[2].Name())
 	require.Equal(t, "leverage", cmd.Commands()[3].Name())
 	require.Equal(t, "list-clob-pair", cmd.Commands()[4].Name())
-	require.Equal(t, "show-clob-pair", cmd.Commands()[5].Name())
-	require.Equal(t, "stateful-order", cmd.Commands()[6].Name())
+	require.Equal(t, "order-fill-amount", cmd.Commands()[5].Name())
+	require.Equal(t, "show-clob-pair", cmd.Commands()[6].Name())
+	require.Equal(t, "spot-delist-cursor", cmd.Commands()[7].Name())
+	require.Equal(t, "spot-pair-lifecycle", cmd.Commands()[8].Name())
+	require.Equal(t, "spot-resource-params", cmd.Commands()[9].Name())
+	require.Equal(t, "spot-stateful-orders", cmd.Commands()[10].Name())
+	require.Equal(t, "stateful-order", cmd.Commands()[11].Name())
+	require.Equal(t, "stateful-spot-reservation", cmd.Commands()[12].Name())
 }
 
 func TestAppModule_Name(t *testing.T) {

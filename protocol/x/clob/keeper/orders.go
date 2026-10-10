@@ -147,6 +147,11 @@ func (k Keeper) CancelShortTermOrder(
 	if err := k.PerformOrderCancellationStatefulValidation(ctx, msgCancelOrder, nextBlockHeight); err != nil {
 		return err
 	}
+	clobPair, found := k.GetClobPair(ctx, types.ClobPairId(msgCancelOrder.OrderId.GetClobPairId()))
+	isSpotOrder := found && clobPair.GetSpotClobMetadata() != nil
+	if isSpotOrder {
+		debugSpotOrder(ctx, msgCancelOrder.OrderId, "SPOT_ORDER_VALIDATED", "operation", "cancel")
+	}
 
 	// Update in-memory orderbook to remove short term order.
 	offchainUpdates, err := k.MemClob.CancelOrder(ctx, msgCancelOrder)
@@ -159,6 +164,9 @@ func (k Keeper) CancelShortTermOrder(
 		tmhash.Sum(ctx.TxBytes()),
 		metrics.SendCancelOrderOffchainUpdates,
 	)
+	if isSpotOrder {
+		infoSpotOrder(ctx, msgCancelOrder.OrderId, "SPOT_ORDER_CANCELLED", "order_type", "short_term")
+	}
 
 	return nil
 }
@@ -208,6 +216,11 @@ func (k Keeper) PlaceShortTermOrder(
 	if err != nil {
 		return 0, 0, err
 	}
+	clobPair, found := k.GetClobPair(ctx, order.GetClobPairId())
+	isSpotOrder := found && clobPair.GetSpotClobMetadata() != nil
+	if isSpotOrder {
+		debugSpotOrder(ctx, order.OrderId, "SPOT_ORDER_VALIDATED", "order_type", "short_term")
+	}
 
 	if err = k.ValidateSubaccountEquityTierLimitForShortTermOrder(ctx, order); err != nil {
 		telemetry.IncrCounterWithLabels(
@@ -239,6 +252,16 @@ func (k Keeper) PlaceShortTermOrder(
 			[]string{types.ModuleName, metrics.PlaceOrder, metrics.Matched},
 			1,
 			orderLabels,
+		)
+	}
+	if isSpotOrder && err == nil {
+		infoSpotOrder(
+			ctx,
+			order.OrderId,
+			"SPOT_ORDER_ACCEPTED",
+			"order_type", "short_term",
+			"order_status", orderStatus,
+			"optimistically_filled_base_quantums", orderSizeOptimisticallyFilledFromMatchingQuantums,
 		)
 	}
 
@@ -368,6 +391,11 @@ func (k Keeper) PlaceStatefulOrder(
 	); err != nil {
 		return err
 	}
+	clobPair, found := k.GetClobPair(ctx, order.GetClobPairId())
+	if !found {
+		return types.ErrInvalidClob
+	}
+	isSpotOrder := clobPair.GetSpotClobMetadata() != nil
 
 	if !isInternalOrder {
 		// 3. Check that adding the order would not exceed the equity tier for the account.
@@ -386,7 +414,7 @@ func (k Keeper) PlaceStatefulOrder(
 	// 4. Perform a check on the subaccount updates for the full size of the order to mitigate spam.
 	// These checks should happen for all non-internal orders and for generated TWAP suborders.
 	// For market TWAP orders where subticks are 0, use the oracle price for collateralization check.
-	if order.IsCollateralCheckRequired(isInternalOrder) {
+	if !isSpotOrder && order.IsCollateralCheckRequired(isInternalOrder) {
 		order_subticks, err := k.GetSubticksForCollatCheck(ctx, order)
 		if err != nil {
 			return err
@@ -421,11 +449,7 @@ func (k Keeper) PlaceStatefulOrder(
 	// 5. If we are in `deliverTx` then we write the order to committed state otherwise add the order to uncommitted
 	// state.
 	if lib.IsDeliverTxMode(ctx) {
-		clobPair, found := k.GetClobPair(ctx, order.GetClobPairId())
-		if !found {
-			return types.ErrInvalidClob
-		}
-		if clobPair.GetSpotClobMetadata() != nil {
+		if isSpotOrder {
 			return k.placeSpotStatefulOrder(ctx, order)
 		}
 		// Write the stateful order to state and the memstore.
@@ -1274,9 +1298,12 @@ func (k Keeper) GetStatePosition(ctx sdk.Context, subaccountId satypes.Subaccoun
 		panic(fmt.Sprintf("GetStatePosition: CLOB pair %d not found", clobPairId))
 	}
 
-	// Get the perpetual ID for this CLOB pair, and panic if it is not a perpetual CLOB.
+	// Spot pairs have no perpetual position. Reduce-only resizing does not apply.
 	perpetualId, err := clobPair.GetPerpetualId()
 	if err != nil {
+		if clobPair.GetSpotClobMetadata() != nil {
+			return new(big.Int)
+		}
 		panic(
 			errorsmod.Wrap(
 				err,

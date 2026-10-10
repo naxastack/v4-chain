@@ -39,6 +39,13 @@ service Query {
     option (google.api.http).get =
         "/dydxprotocol/subaccounts/collateral_pool_address/{perpetual_id}";
   }
+
+  // Queries the current spot short-term order epoch for one asset.
+  rpc SpotOrderEpoch(QuerySpotOrderEpochRequest)
+      returns (QuerySpotOrderEpochResponse) {
+    option (google.api.http).get =
+        "/dydxprotocol/subaccounts/spot_order_epoch/{owner}/{number}/{asset_id}";
+  }
 }
 
 // QueryGetSubaccountRequest is request type for the Query RPC method.
@@ -90,3 +97,14 @@ message QueryCollateralPoolAddressResponse {
   string collateral_pool_address = 1
       [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 }
+
+// QuerySpotOrderEpochRequest identifies one subaccount asset.
+message QuerySpotOrderEpochRequest {
+  string owner = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  uint32 number = 2;
+  uint32 asset_id = 3;
+}
+
+// QuerySpotOrderEpochResponse contains the current short-term order epoch.
+// A missing record returns zero. Funding accounts do not store an epoch.
+message QuerySpotOrderEpochResponse { uint64 epoch = 1; }

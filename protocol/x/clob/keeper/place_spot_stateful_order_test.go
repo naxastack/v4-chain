@@ -56,6 +56,20 @@ func TestPlaceSpotStatefulOrderReservationLifecycle(t *testing.T) {
 		return ks, id
 	}
 
+	t.Run("spot long term check tx does not use perpetual collateralization", func(t *testing.T) {
+		ks, id := newContext(t, 100)
+		ctx := ks.Ctx.WithIsCheckTx(true).WithIsReCheckTx(false).WithBlockHeight(10)
+		order := spotReservationTestOrder(id, 1)
+
+		var err error
+		require.NotPanics(t, func() {
+			err = ks.ClobKeeper.PlaceStatefulOrder(ctx, &types.MsgPlaceOrder{Order: order}, false)
+		})
+		require.NoError(t, err)
+		_, found := ks.ClobKeeper.GetUncommittedStatefulOrderPlacement(ctx, order.OrderId)
+		require.True(t, found)
+	})
+
 	t.Run("success and duplicate", func(t *testing.T) {
 		ks, id := newContext(t, 100)
 		ctx := ks.Ctx.WithIsCheckTx(false).WithIsReCheckTx(false).WithBlockHeight(10)

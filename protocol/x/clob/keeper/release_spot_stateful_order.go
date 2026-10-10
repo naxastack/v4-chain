@@ -55,6 +55,14 @@ func (k Keeper) ReleaseStatefulSpotOrder(ctx sdk.Context, orderId types.OrderId)
 	k.setSpotStatefulOrderCount(cacheCtx, orderId.SubaccountId, count-1)
 	k.mustRemoveStatefulOrder(cacheCtx, orderId)
 	write()
+	infoSpotOrder(
+		ctx,
+		orderId,
+		"SPOT_RESERVATION_RELEASED",
+		"outgoing_asset_id", reservation.OutgoingAssetId,
+		"released_quantums", amount.String(),
+	)
+	infoSpotOrder(ctx, orderId, "SPOT_ORDER_CANCELLED", "order_type", "stateful")
 	return nil
 }
 

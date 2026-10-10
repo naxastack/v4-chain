@@ -170,7 +170,16 @@ func TestAppModuleBasic_GetQueryCmd(t *testing.T) {
 
 	cmd := am.GetQueryCmd()
 	require.Equal(t, "assets", cmd.Use)
-	require.Len(t, cmd.Commands(), 0)
+	var names []string
+	for _, child := range cmd.Commands() {
+		names = append(names, child.Name())
+	}
+	require.ElementsMatch(t, []string{
+		"asset-policy",
+		"asset-policy-state",
+		"asset-lifecycle-task",
+		"asset-lifecycle-scheduler-cursor",
+	}, names)
 }
 
 func TestAppModule_Name(t *testing.T) {
