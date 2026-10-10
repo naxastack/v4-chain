@@ -43,6 +43,18 @@ func InitGenesis(ctx sdk.Context, k *keeper.Keeper, genState types.GenesisState)
 	for _, reservation := range genState.StatefulSpotReservations {
 		k.ImportStatefulSpotReservation(ctx, reservation)
 	}
+	for _, lifecycle := range genState.SpotPairLifecycles {
+		if err := k.ImportSpotPairLifecycle(ctx, lifecycle); err != nil {
+			panic(err)
+		}
+	}
+	for _, cursor := range genState.SpotDelistCursors {
+		if err := k.ImportSpotDelistCursor(ctx, cursor); err != nil {
+			panic(err)
+		}
+	}
+	k.SetSpotDelistSchedulerCursor(ctx, genState.SpotDelistSchedulerCursor)
+	k.EnsureFinalSettlementDelistCursors(ctx)
 
 	// Create the `LiquidationsConfig` in state, and panic if the genesis state is invalid.
 	if err := k.InitializeLiquidationsConfig(ctx, genState.LiquidationsConfig); err != nil {
@@ -73,6 +85,9 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.ClobPairs = k.GetAllClobPairs(ctx)
 
 	genesis.StatefulSpotReservations = k.GetAllStatefulSpotReservations(ctx)
+	genesis.SpotPairLifecycles = k.GetAllSpotPairLifecycles(ctx)
+	genesis.SpotDelistCursors = k.GetAllSpotDelistCursors(ctx)
+	genesis.SpotDelistSchedulerCursor = k.GetSpotDelistSchedulerCursor(ctx)
 
 	// Read the liquidations config from state.
 	genesis.LiquidationsConfig = k.GetLiquidationsConfig(ctx)

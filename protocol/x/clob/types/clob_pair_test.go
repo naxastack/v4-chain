@@ -149,3 +149,25 @@ func TestIsSupportedClobPairStatusTransition_Unsupported(t *testing.T) {
 		}
 	}
 }
+
+func TestIsSupportedSpotClobPairStatusTransition(t *testing.T) {
+	tests := []struct {
+		name     string
+		from     types.ClobPair_Status
+		to       types.ClobPair_Status
+		expected bool
+	}{
+		{name: "active to cancel only", from: types.ClobPair_STATUS_ACTIVE, to: types.ClobPair_STATUS_CANCEL_ONLY, expected: true},
+		{name: "cancel only to active", from: types.ClobPair_STATUS_CANCEL_ONLY, to: types.ClobPair_STATUS_ACTIVE, expected: true},
+		{name: "active to final settlement", from: types.ClobPair_STATUS_ACTIVE, to: types.ClobPair_STATUS_FINAL_SETTLEMENT, expected: true},
+		{name: "cancel only to final settlement", from: types.ClobPair_STATUS_CANCEL_ONLY, to: types.ClobPair_STATUS_FINAL_SETTLEMENT, expected: true},
+		{name: "same active status", from: types.ClobPair_STATUS_ACTIVE, to: types.ClobPair_STATUS_ACTIVE, expected: true},
+		{name: "final settlement is terminal", from: types.ClobPair_STATUS_FINAL_SETTLEMENT, to: types.ClobPair_STATUS_ACTIVE, expected: false},
+		{name: "initializing is invalid", from: types.ClobPair_STATUS_INITIALIZING, to: types.ClobPair_STATUS_ACTIVE, expected: false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expected, types.IsSupportedSpotClobPairStatusTransition(tc.from, tc.to))
+		})
+	}
+}

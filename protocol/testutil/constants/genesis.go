@@ -324,7 +324,8 @@ const GenesisState = `{
       },
       "spot_resource_params": {
         "max_spot_stateful_orders_per_subaccount": 100,
-        "max_spot_delist_orders_per_block": 100
+        "max_spot_delist_orders_per_block": 100,
+        "max_asset_lifecycle_pairs_per_block": 10
       },
       "liquidations_config": {
         "fillable_price_config": {

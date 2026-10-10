@@ -52,14 +52,30 @@ func TestParallelAnteHandler_ClobAndOther(t *testing.T) {
 			&genesis,
 			func(genesisState *satypes.GenesisState) {
 				for _, simAccount := range simAccounts {
+					owner := sdktypes.MustBech32ifyAddressBytes(config.Bech32PrefixAccAddr, simAccount.PubKey.Address())
 					genesisState.Subaccounts = append(genesisState.Subaccounts, satypes.Subaccount{
 						Id: &satypes.SubaccountId{
-							Owner:  sdktypes.MustBech32ifyAddressBytes(config.Bech32PrefixAccAddr, simAccount.PubKey.Address()),
+							Owner:  owner,
 							Number: 0,
 						},
+						AccountType: satypes.AccountType_ACCOUNT_TYPE_PERPETUAL,
 						AssetPositions: []*satypes.AssetPosition{
 							&constants.Usdc_Asset_500_000,
 						},
+					})
+
+					fundingId := &satypes.SubaccountId{Owner: owner, Number: 1}
+					genesisState.Subaccounts = append(genesisState.Subaccounts, satypes.Subaccount{
+						Id:          fundingId,
+						AccountType: satypes.AccountType_ACCOUNT_TYPE_FUNDING,
+						AssetPositions: []*satypes.AssetPosition{
+							&constants.Usdc_Asset_500_000,
+						},
+					})
+					genesisState.TypedSubaccounts = append(genesisState.TypedSubaccounts, satypes.TypedSubaccount{
+						Owner:        owner,
+						AccountType:  satypes.AccountType_ACCOUNT_TYPE_FUNDING,
+						SubaccountId: fundingId,
 					})
 				}
 			},
@@ -129,7 +145,7 @@ func TestParallelAnteHandler_ClobAndOther(t *testing.T) {
 						&sendingtypes.MsgWithdrawFromSubaccount{
 							Sender: satypes.SubaccountId{
 								Owner:  simAccount.Address.String(),
-								Number: 0,
+								Number: 1,
 							},
 							Recipient: simAccount.Address.String(),
 							AssetId:   constants.Usdc.Id,
@@ -137,7 +153,7 @@ func TestParallelAnteHandler_ClobAndOther(t *testing.T) {
 						},
 					},
 					constants.TestFeeCoins_5Cents,
-					110_000,
+					120_000,
 					ctx.ChainID(),
 					[]uint64{account.GetAccountNumber()},
 					[]uint64{sequenceNumber},
@@ -255,7 +271,7 @@ func TestParallelAnteHandler_ClobAndOther(t *testing.T) {
 		account := accounts[i]
 		subAccount := tApp.App.SubaccountsKeeper.GetSubaccount(ctx, satypes.SubaccountId{
 			Owner:  account.GetAddress().String(),
-			Number: 0,
+			Number: 1,
 		})
 		require.Equal(
 			t,

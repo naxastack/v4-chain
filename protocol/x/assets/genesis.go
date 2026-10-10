@@ -27,10 +27,21 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 		}
 	}
 	for _, policy := range genState.AssetPolicies {
-		if err := k.CreateAssetPolicy(ctx, policy); err != nil {
+		if err := k.ImportGenesisAssetPolicy(ctx, policy); err != nil {
 			panic(err)
 		}
 	}
+	for _, state := range genState.AssetPolicyStates {
+		if err := k.ImportAssetPolicyState(ctx, state); err != nil {
+			panic(err)
+		}
+	}
+	for _, task := range genState.AssetLifecycleTasks {
+		if err := k.ImportAssetLifecycleTask(ctx, task); err != nil {
+			panic(err)
+		}
+	}
+	k.SetAssetLifecycleSchedulerCursor(ctx, genState.AssetLifecycleSchedulerCursor)
 }
 
 // ExportGenesis returns the assets module's exported genesis.
@@ -38,5 +49,8 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 	genesis.Assets = k.GetAllAssets(ctx)
 	genesis.AssetPolicies = k.GetAllAssetPolicies(ctx)
+	genesis.AssetPolicyStates = k.GetAllAssetPolicyStates(ctx)
+	genesis.AssetLifecycleTasks = k.GetAllAssetLifecycleTasks(ctx)
+	genesis.AssetLifecycleSchedulerCursor = k.GetAssetLifecycleSchedulerCursor(ctx)
 	return genesis
 }

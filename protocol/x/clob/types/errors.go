@@ -575,6 +575,8 @@ var (
 	ErrSpotQuoteNotPositive          = errorsmod.Register(ModuleName, 11006, "spot match quote amount must be positive")
 	ErrSpotSellerNetQuoteNotPositive = errorsmod.Register(ModuleName, 11007, "spot seller net quote amount must be positive")
 	ErrSpotOrderEpochMismatch        = errorsmod.Register(ModuleName, 11008, "spot short-term order epoch does not match chain state")
+	ErrInvalidSpotPairLifecycleState = errorsmod.Register(ModuleName, 11009, "invalid spot pair lifecycle state")
+	ErrInvalidSpotDelistCursor       = errorsmod.Register(ModuleName, 11010, "invalid spot delist cursor")
 	ErrInitialMarginPpmIsZero        = errorsmod.Register(
 		ModuleName,
 		11004,

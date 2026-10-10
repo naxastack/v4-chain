@@ -26,6 +26,11 @@ func (k Keeper) CreateAssetPolicy(ctx sdk.Context, policy types.AssetPolicy) err
 		return err
 	}
 	k.setAssetPolicy(ctx, policy)
+	k.setAssetPolicyState(ctx, types.AssetPolicyState{
+		AssetId:          policy.AssetId,
+		PolicyVersion:    1,
+		LifecycleVersion: 1,
+	})
 	return nil
 }
 
@@ -35,10 +40,34 @@ func (k Keeper) UpdateAssetPolicy(ctx sdk.Context, policy types.AssetPolicy) err
 	if !exists {
 		return errorsmod.Wrapf(types.ErrAssetPolicyDoesNotExist, "asset id = %d", policy.AssetId)
 	}
+	if previous == policy {
+		return nil
+	}
 	if err := types.ValidateAssetPolicyTransition(previous, policy); err != nil {
 		return err
 	}
 	k.setAssetPolicy(ctx, policy)
+
+	state, found := k.GetAssetPolicyState(ctx, policy.AssetId)
+	if !found {
+		state = types.AssetPolicyState{
+			AssetId:          policy.AssetId,
+			PolicyVersion:    1,
+			LifecycleVersion: 1,
+		}
+	}
+	state.PolicyVersion++
+	if previous.Status != policy.Status {
+		state.LifecycleVersion++
+		k.setAssetLifecycleTask(ctx, types.AssetLifecycleTask{
+			AssetId:                policy.AssetId,
+			TargetLifecycleVersion: state.LifecycleVersion,
+			TargetStatus:           policy.Status,
+			NextClobPairId:         0,
+			Completed:              false,
+		})
+	}
+	k.setAssetPolicyState(ctx, state)
 	return nil
 }
 

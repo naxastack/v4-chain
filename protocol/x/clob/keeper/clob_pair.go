@@ -470,7 +470,11 @@ func (k Keeper) validateOrderAgainstClobPairStatus(
 	order types.Order,
 	clobPair types.ClobPair,
 ) error {
-	if !types.IsSupportedClobPairStatus(clobPair.Status) {
+	isSupportedStatus := types.IsSupportedClobPairStatus(clobPair.Status)
+	if clobPair.GetSpotClobMetadata() != nil {
+		isSupportedStatus = types.IsSupportedSpotClobPairStatus(clobPair.Status)
+	}
+	if !isSupportedStatus {
 		// Validation should only be called against ClobPairs in state, implying we have a ClobPair with
 		// an unsupported status in state.
 		panic(
@@ -532,7 +536,7 @@ func (k Keeper) validateOrderAgainstClobPairStatus(
 				clobPair.Status,
 			)
 		}
-	case types.ClobPair_STATUS_FINAL_SETTLEMENT:
+	case types.ClobPair_STATUS_CANCEL_ONLY, types.ClobPair_STATUS_FINAL_SETTLEMENT:
 		return errorsmod.Wrapf(
 			types.ErrOrderConflictsWithClobPairStatus,
 			"Order %+v disallowed, trading is disabled for clob pair with status %+v",
@@ -592,27 +596,41 @@ func (k Keeper) UpdateClobPair(
 		)
 	}
 
-	// Note, only perpetual clob pairs are currently supported. Neither the old nor the
-	// new clob pair should be spot.
-	perpetualId, err := clobPair.GetPerpetualId()
-	if err != nil {
+	oldSpotMetadata := oldClobPair.GetSpotClobMetadata()
+	newSpotMetadata := clobPair.GetSpotClobMetadata()
+	isSpot := oldSpotMetadata != nil
+	if isSpot != (newSpotMetadata != nil) {
 		return errorsmod.Wrap(
 			types.ErrInvalidClobPairUpdate,
-			err.Error(),
+			"UpdateClobPair: cannot change ClobPair product type",
 		)
 	}
-	oldPerpetualId, err := oldClobPair.GetPerpetualId()
-	if err != nil {
-		return errorsmod.Wrap(
-			types.ErrInvalidClobPairUpdate,
-			err.Error(),
-		)
-	}
-	if perpetualId != oldPerpetualId {
-		return errorsmod.Wrap(
-			types.ErrInvalidClobPairUpdate,
-			"UpdateClobPair: cannot update ClobPair perpetual id",
-		)
+
+	var perpetualId uint32
+	if isSpot {
+		if oldSpotMetadata.BaseAssetId != newSpotMetadata.BaseAssetId ||
+			oldSpotMetadata.QuoteAssetId != newSpotMetadata.QuoteAssetId {
+			return errorsmod.Wrap(
+				types.ErrInvalidClobPairUpdate,
+				"UpdateClobPair: cannot update Spot asset ids",
+			)
+		}
+	} else {
+		var err error
+		perpetualId, err = clobPair.GetPerpetualId()
+		if err != nil {
+			return errorsmod.Wrap(types.ErrInvalidClobPairUpdate, err.Error())
+		}
+		oldPerpetualId, err := oldClobPair.GetPerpetualId()
+		if err != nil {
+			return errorsmod.Wrap(types.ErrInvalidClobPairUpdate, err.Error())
+		}
+		if perpetualId != oldPerpetualId {
+			return errorsmod.Wrap(
+				types.ErrInvalidClobPairUpdate,
+				"UpdateClobPair: cannot update ClobPair perpetual id",
+			)
+		}
 	}
 	if clobPair.StepBaseQuantums != oldClobPair.StepBaseQuantums {
 		newSBQ := clobPair.StepBaseQuantums
@@ -653,7 +671,11 @@ func (k Keeper) UpdateClobPair(
 
 	oldStatus := oldClobPair.Status
 	newStatus := clobPair.Status
-	if !types.IsSupportedClobPairStatusTransition(oldStatus, newStatus) {
+	isSupportedTransition := types.IsSupportedClobPairStatusTransition(oldStatus, newStatus)
+	if isSpot {
+		isSupportedTransition = types.IsSupportedSpotClobPairStatusTransition(oldStatus, newStatus)
+	}
+	if !isSupportedTransition {
 		return errorsmod.Wrapf(
 			types.ErrInvalidClobPairStatusTransition,
 			"Cannot transition from status %+v to status %+v",
@@ -662,20 +684,46 @@ func (k Keeper) UpdateClobPair(
 		)
 	}
 
-	if err := k.validateClobPair(ctx, &clobPair); err != nil {
+	if isSpot && newStatus == types.ClobPair_STATUS_ACTIVE {
+		if err := k.ValidateSpotMarketActivation(ctx, clobPair); err != nil {
+			return err
+		}
+	} else if isSpot {
+		if err := clobPair.Validate(); err != nil {
+			return err
+		}
+	} else if err := k.validateClobPair(ctx, &clobPair); err != nil {
 		return err
 	}
 
 	// If newly transitioning to final settlement, enter final settlement before writing the
 	// clob pair and syncing the memclob: the transition can fail (isolated insurance fund
 	// sweep), and an error rolls back state writes but not memclob mutations.
-	if newStatus == types.ClobPair_STATUS_FINAL_SETTLEMENT && oldStatus != newStatus {
+	if !isSpot && newStatus == types.ClobPair_STATUS_FINAL_SETTLEMENT && oldStatus != newStatus {
 		if err := k.transitionToFinalSettlement(ctx, clobPair.GetClobPairId(), perpetualId); err != nil {
 			return err
 		}
 	}
 
 	k.SetClobPair(ctx, clobPair)
+	if isSpot {
+		lifecycleState, found := k.GetSpotPairLifecycleState(ctx, clobPair.GetClobPairId())
+		if !found {
+			lifecycleState = types.SpotPairLifecycleState{}
+		}
+		switch newStatus {
+		case types.ClobPair_STATUS_ACTIVE:
+			lifecycleState.PauseSource = types.SpotPauseSourceNone
+		case types.ClobPair_STATUS_CANCEL_ONLY:
+			lifecycleState.PauseSource = types.SpotPauseSourceManual
+		case types.ClobPair_STATUS_FINAL_SETTLEMENT:
+			lifecycleState.FinalSettlementStarted = true
+		}
+		k.SetSpotPairLifecycleState(ctx, clobPair.GetClobPairId(), lifecycleState)
+		if newStatus == types.ClobPair_STATUS_FINAL_SETTLEMENT {
+			k.EnsureSpotDelistCursor(ctx, clobPair.Id)
+		}
+	}
 
 	if shouldSyncMemClobState {
 		k.MemClob.SyncOrderbookState(clobPair)
@@ -774,6 +822,24 @@ func (k Keeper) validateInternalOperationAgainstClobPairStatus(
 		panic(
 			"validateInternalOperationAgainstClobPairStatus: ClobPair's status is not supported",
 		)
+	}
+
+	// Spot markets in CANCEL_ONLY or FINAL_SETTLEMENT remain available for
+	// cancellation, but must not accept placements or execute matches.
+	if clobPair.GetSpotClobMetadata() != nil {
+		switch clobPair.Status {
+		case types.ClobPair_STATUS_CANCEL_ONLY, types.ClobPair_STATUS_FINAL_SETTLEMENT:
+			if internalOperation.GetOrderRemoval() != nil {
+				return nil
+			}
+			return errorsmod.Wrapf(
+				types.ErrOperationConflictsWithClobPairStatus,
+				"Operation %s invalid for Spot ClobPair with id %d with status %s",
+				internalOperation.GetInternalOperationTextString(),
+				clobPairId,
+				clobPair.Status,
+			)
+		}
 	}
 
 	// Branch validation logic for supported statuses requiring validation.

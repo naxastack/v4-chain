@@ -1886,6 +1886,9 @@ func (app *App) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.
 	if err != nil {
 		panic(err)
 	}
+	if err := app.ValidateSpotGenesis(ctx); err != nil {
+		panic(err)
+	}
 	block := app.IndexerEventManager.ProduceBlock(ctx)
 	app.IndexerEventManager.SendOnchainData(block)
 	app.IndexerEventManager.ClearEvents(ctx)

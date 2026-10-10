@@ -76,7 +76,7 @@ func TestTransfer_Isolated_Non_Isolated_Subaccounts(t *testing.T) {
 			},
 			expectedSubaccounts: []satypes.Subaccount{
 				withPerpetualAccountType(testutil.ChangeUsdcBalance(constants.Alice_Num0_1ISO_LONG_10_000USD, -100_000_000)),
-				testutil.ChangeUsdcBalance(constants.Bob_Num0_10_000USD, 100_000_000),
+				withPerpetualAccountType(testutil.ChangeUsdcBalance(constants.Bob_Num0_10_000USD, 100_000_000)),
 			},
 			expectedCollateralPoolBalances: map[string]int64{
 				satypes.ModuleAddress.String(): 10_100_000_000, // $10,100 USDC
@@ -109,7 +109,7 @@ func TestTransfer_Isolated_Non_Isolated_Subaccounts(t *testing.T) {
 			},
 			expectedSubaccounts: []satypes.Subaccount{
 				withPerpetualAccountType(testutil.ChangeUsdcBalance(constants.Alice_Num0_1ISO_LONG_10_000USD, 100_000_000)),
-				testutil.ChangeUsdcBalance(constants.Bob_Num0_10_000USD, -100_000_000),
+				withPerpetualAccountType(testutil.ChangeUsdcBalance(constants.Bob_Num0_10_000USD, -100_000_000)),
 			},
 			expectedCollateralPoolBalances: map[string]int64{
 				satypes.ModuleAddress.String(): 9_900_000_000, // $9,900 USDC

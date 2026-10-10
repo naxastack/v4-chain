@@ -36,6 +36,14 @@ func DefaultGenesis() *GenesisState {
 		AssetPolicies: []AssetPolicy{
 			AssetPolicyUsdc,
 		},
+		AssetPolicyStates: []AssetPolicyState{
+			{
+				AssetId:          AssetUsdc.Id,
+				PolicyVersion:    1,
+				LifecycleVersion: 1,
+			},
+		},
+		AssetLifecycleTasks: []AssetLifecycleTask{},
 	}
 }
 
@@ -79,9 +87,6 @@ func (gs GenesisState) Validate() error {
 		if _, exists := policyIds[policy.AssetId]; exists {
 			return ErrAssetPolicyAlreadyExists
 		}
-		if policy.Status != AssetPolicyStatus_ASSET_POLICY_STATUS_ACTIVE {
-			return ErrInvalidAssetPolicyStatus
-		}
 		if err := ValidateAssetPolicy(policy); err != nil {
 			return err
 		}
@@ -89,6 +94,54 @@ func (gs GenesisState) Validate() error {
 	}
 	if len(policyIds) != len(assetIdSet) {
 		return ErrAssetPolicyDoesNotExist
+	}
+
+	stateByAsset := make(map[uint32]AssetPolicyState, len(gs.AssetPolicyStates))
+	for _, state := range gs.AssetPolicyStates {
+		if _, exists := policyIds[state.AssetId]; !exists {
+			return ErrAssetPolicyDoesNotExist
+		}
+		if _, exists := stateByAsset[state.AssetId]; exists {
+			return ErrAssetPolicyStateAlreadyExists
+		}
+		if state.PolicyVersion == 0 || state.LifecycleVersion == 0 {
+			return ErrInvalidAssetLifecycleTask
+		}
+		stateByAsset[state.AssetId] = state
+	}
+
+	taskByAsset := make(map[uint32]AssetLifecycleTask, len(gs.AssetLifecycleTasks))
+	for _, task := range gs.AssetLifecycleTasks {
+		if _, exists := policyIds[task.AssetId]; !exists {
+			return ErrAssetPolicyDoesNotExist
+		}
+		if _, exists := taskByAsset[task.AssetId]; exists {
+			return ErrAssetLifecycleTaskAlreadyExists
+		}
+		state, exists := stateByAsset[task.AssetId]
+		if !exists || task.TargetLifecycleVersion != state.LifecycleVersion {
+			return ErrInvalidAssetLifecycleTask
+		}
+		switch task.TargetStatus {
+		case AssetPolicyStatus_ASSET_POLICY_STATUS_ACTIVE,
+			AssetPolicyStatus_ASSET_POLICY_STATUS_PAUSED,
+			AssetPolicyStatus_ASSET_POLICY_STATUS_RETIRED:
+		default:
+			return ErrInvalidAssetLifecycleTask
+		}
+		taskByAsset[task.AssetId] = task
+	}
+	for _, policy := range gs.AssetPolicies {
+		if policy.Status == AssetPolicyStatus_ASSET_POLICY_STATUS_ACTIVE {
+			continue
+		}
+		task, exists := taskByAsset[policy.AssetId]
+		state, stateExists := stateByAsset[policy.AssetId]
+		if !exists || !stateExists ||
+			task.TargetStatus != policy.Status ||
+			task.TargetLifecycleVersion != state.LifecycleVersion {
+			return ErrInvalidAssetPolicyStatus
+		}
 	}
 	return nil
 }

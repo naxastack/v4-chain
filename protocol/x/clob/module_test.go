@@ -57,7 +57,7 @@ func getValidGenesisStr() string {
 	gs += `{"limit":5,"usd_tnc_required":"100"},{"limit":10,"usd_tnc_required":"1000"},`
 	gs += `{"limit":100,"usd_tnc_required":"10000"},{"limit":200,"usd_tnc_required":"100000"}]},`
 	gs += `"spot_resource_params":{"max_spot_stateful_orders_per_subaccount":100,`
-	gs += `"max_spot_delist_orders_per_block":100}}`
+	gs += `"max_spot_delist_orders_per_block":100,"max_asset_lifecycle_pairs_per_block":10}}`
 	return gs
 }
 
@@ -175,7 +175,7 @@ func TestAppModuleBasic_DefaultGenesis(t *testing.T) {
 	expected += `"max_short_term_order_cancellations_per_n_blocks":[],"max_short_term_orders_per_n_blocks":[]},`
 	expected += `"equity_tier_limit_config":{"short_term_order_equity_tiers":[], "stateful_order_equity_tiers":[]},`
 	expected += `"spot_resource_params":{"max_spot_stateful_orders_per_subaccount":100,`
-	expected += `"max_spot_delist_orders_per_block":100},"stateful_spot_reservations":[]}`
+	expected += `"max_spot_delist_orders_per_block":100,"max_asset_lifecycle_pairs_per_block":10},"stateful_spot_reservations":[],"spot_pair_lifecycles":[],"spot_delist_cursors":[],"spot_delist_scheduler_cursor":{"next_clob_pair_id":0}}`
 
 	require.JSONEq(t, expected, string(json))
 }
@@ -457,7 +457,7 @@ func TestAppModule_InitExportGenesis(t *testing.T) {
 	expected += `{"limit":5,"usd_tnc_required":"100"},{"limit":10,"usd_tnc_required":"1000"},`
 	expected += `{"limit":100,"usd_tnc_required":"10000"},{"limit":200,"usd_tnc_required":"100000"}]},`
 	expected += `"spot_resource_params":{"max_spot_stateful_orders_per_subaccount":100,`
-	expected += `"max_spot_delist_orders_per_block":100},"stateful_spot_reservations":[]}`
+	expected += `"max_spot_delist_orders_per_block":100,"max_asset_lifecycle_pairs_per_block":10},"stateful_spot_reservations":[],"spot_pair_lifecycles":[],"spot_delist_cursors":[],"spot_delist_scheduler_cursor":{"next_clob_pair_id":0}}`
 	require.JSONEq(t, expected, string(genesisJson))
 }
 

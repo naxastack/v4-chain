@@ -97,7 +97,9 @@ func TestAppModuleBasic_DefaultGenesis(t *testing.T) {
 	expected += `"market_id":0,"atomic_resolution":-6}],`
 	expected += `"asset_policies":[{"asset_id":0,"status":"ASSET_POLICY_STATUS_ACTIVE",`
 	expected += `"deposits_enabled":true,"withdrawals_enabled":true,`
-	expected += `"spot_trading_enabled":true,"perpetual_enabled":true}]}`
+	expected += `"spot_trading_enabled":true,"perpetual_enabled":true}],`
+	expected += `"asset_policy_states":[{"asset_id":0,"policy_version":"1","lifecycle_version":"1"}],`
+	expected += `"asset_lifecycle_tasks":[],"asset_lifecycle_scheduler_cursor":{"next_asset_id":0}}`
 	require.Equal(t, expected, string(json))
 }
 
@@ -229,7 +231,9 @@ func TestAppModule_InitExportGenesis(t *testing.T) {
 	expected += `"market_id":0,"atomic_resolution":-6}],`
 	expected += `"asset_policies":[{"asset_id":0,"status":"ASSET_POLICY_STATUS_ACTIVE",`
 	expected += `"deposits_enabled":true,"withdrawals_enabled":true,`
-	expected += `"spot_trading_enabled":true,"perpetual_enabled":true}]}`
+	expected += `"spot_trading_enabled":true,"perpetual_enabled":true}],`
+	expected += `"asset_policy_states":[{"asset_id":0,"policy_version":"1","lifecycle_version":"1"}],`
+	expected += `"asset_lifecycle_tasks":[],"asset_lifecycle_scheduler_cursor":{"next_asset_id":0}}`
 	require.Equal(t, expected, string(genesisJson))
 }
 

@@ -31,6 +31,12 @@ func TestGetRecoverableSpotSkipReason(t *testing.T) {
 			wantOK:     true,
 		},
 		{
+			name:       "market not tradable through wrapping",
+			err:        errorsmod.Wrap(types.ErrOperationConflictsWithClobPairStatus, "cancel-only market"),
+			wantReason: types.SpotOperationSkipReasonMarketNotTradable,
+			wantOK:     true,
+		},
+		{
 			name:       "fee cap",
 			err:        types.ErrSpotFeeCapExceeded,
 			wantReason: types.SpotOperationSkipReasonFeeCapExceeded,

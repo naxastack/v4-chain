@@ -32,6 +32,27 @@ service Query {
       returns (QueryAllAssetPoliciesResponse) {
     option (google.api.http).get = "/dydxprotocol/assets/asset_policy";
   }
+
+  // Queries the policy version state for one asset.
+  rpc AssetPolicyState(QueryAssetPolicyStateRequest)
+      returns (QueryAssetPolicyStateResponse) {
+    option (google.api.http).get =
+        "/dydxprotocol/assets/asset_policy_state/{asset_id}";
+  }
+
+  // Queries the lifecycle task for one asset.
+  rpc AssetLifecycleTask(QueryAssetLifecycleTaskRequest)
+      returns (QueryAssetLifecycleTaskResponse) {
+    option (google.api.http).get =
+        "/dydxprotocol/assets/asset_lifecycle_task/{asset_id}";
+  }
+
+  // Queries the asset lifecycle scheduler cursor.
+  rpc AssetLifecycleSchedulerCursor(QueryAssetLifecycleSchedulerCursorRequest)
+      returns (QueryAssetLifecycleSchedulerCursorResponse) {
+    option (google.api.http).get =
+        "/dydxprotocol/assets/asset_lifecycle_scheduler_cursor";
+  }
 }
 
 // Queries an Asset by id.
@@ -68,4 +89,28 @@ message QueryAllAssetPoliciesRequest {
 message QueryAllAssetPoliciesResponse {
   repeated AssetPolicy policies = 1 [ (gogoproto.nullable) = false ];
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryAssetPolicyStateRequest queries policy versions by asset id.
+message QueryAssetPolicyStateRequest { uint32 asset_id = 1; }
+
+// QueryAssetPolicyStateResponse contains one asset policy version record.
+message QueryAssetPolicyStateResponse {
+  AssetPolicyState state = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryAssetLifecycleTaskRequest queries one lifecycle task by asset id.
+message QueryAssetLifecycleTaskRequest { uint32 asset_id = 1; }
+
+// QueryAssetLifecycleTaskResponse contains one lifecycle task.
+message QueryAssetLifecycleTaskResponse {
+  AssetLifecycleTask task = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryAssetLifecycleSchedulerCursorRequest queries the scheduler cursor.
+message QueryAssetLifecycleSchedulerCursorRequest {}
+
+// QueryAssetLifecycleSchedulerCursorResponse contains the scheduler cursor.
+message QueryAssetLifecycleSchedulerCursorResponse {
+  AssetLifecycleSchedulerCursor cursor = 1 [ (gogoproto.nullable) = false ];
 }

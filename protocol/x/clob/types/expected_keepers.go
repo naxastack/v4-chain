@@ -157,6 +157,19 @@ type SubaccountsKeeper interface {
 type AssetsKeeper interface {
 	GetAsset(ctx sdk.Context, id uint32) (val assettypes.Asset, exists bool)
 	ValidateAssetForSpotTrading(ctx sdk.Context, assetId uint32) error
+	GetAssetPolicy(ctx sdk.Context, assetId uint32) (assettypes.AssetPolicy, bool)
+	GetAssetPolicyState(ctx sdk.Context, assetId uint32) (assettypes.AssetPolicyState, bool)
+	GetAssetLifecycleTask(ctx sdk.Context, assetId uint32) (assettypes.AssetLifecycleTask, bool)
+	GetActionableAssetLifecycleTasks(ctx sdk.Context) []assettypes.AssetLifecycleTask
+	GetAssetLifecycleSchedulerCursor(ctx sdk.Context) assettypes.AssetLifecycleSchedulerCursor
+	SetAssetLifecycleTaskProgress(
+		ctx sdk.Context,
+		assetId uint32,
+		expectedLifecycleVersion uint64,
+		nextClobPairId uint32,
+		completed bool,
+	) error
+	SetAssetLifecycleSchedulerCursor(ctx sdk.Context, cursor assettypes.AssetLifecycleSchedulerCursor)
 }
 
 type BlockTimeKeeper interface {

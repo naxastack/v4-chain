@@ -11,4 +11,10 @@ option go_package = "github.com/dydxprotocol/v4-chain/protocol/x/assets/types";
 message GenesisState {
   repeated Asset assets = 1 [ (gogoproto.nullable) = false ];
   repeated AssetPolicy asset_policies = 2 [ (gogoproto.nullable) = false ];
+  repeated AssetPolicyState asset_policy_states = 3
+      [ (gogoproto.nullable) = false ];
+  repeated AssetLifecycleTask asset_lifecycle_tasks = 4
+      [ (gogoproto.nullable) = false ];
+  AssetLifecycleSchedulerCursor asset_lifecycle_scheduler_cursor = 5
+      [ (gogoproto.nullable) = false ];
 }

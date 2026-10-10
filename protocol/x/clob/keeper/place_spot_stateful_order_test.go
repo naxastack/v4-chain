@@ -27,7 +27,7 @@ func TestPlaceSpotStatefulOrderReservationLifecycle(t *testing.T) {
 			&mocks.BankKeeper{},
 			indexer,
 		)
-		require.NoError(t, ks.ClobKeeper.SetSpotResourceParams(ks.Ctx, types.DefaultSpotResourceParams()))
+		configureSpotActivationParams(t, ks)
 		require.NoError(t, keepertest.CreateUsdcAsset(ks.Ctx, ks.AssetsKeeper))
 		_, err := ks.AssetsKeeper.CreateAsset(ks.Ctx, 1, "BASE", "ubase", 0, false, 0, 0)
 		require.NoError(t, err)
@@ -39,8 +39,7 @@ func TestPlaceSpotStatefulOrderReservationLifecycle(t *testing.T) {
 				SpotTradingEnabled: true,
 			}))
 		}
-		_, err = ks.ClobKeeper.CreateSpotClobPair(ks.Ctx, spotReservationTestPair())
-		require.NoError(t, err)
+		createActiveSpotClobPair(t, ks, spotReservationTestPair())
 		id := satypes.SubaccountId{Owner: sampletest.AccAddress(), Number: 1}
 		ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, satypes.Subaccount{
 			Id:          &id,
@@ -284,8 +283,7 @@ func TestPlaceSpotStatefulOrderReservationLifecycle(t *testing.T) {
 		secondPair.Metadata = &types.ClobPair_SpotClobMetadata{
 			SpotClobMetadata: &types.SpotClobMetadata{BaseAssetId: 2, QuoteAssetId: 0},
 		}
-		_, err = ks.ClobKeeper.CreateSpotClobPair(ctx, secondPair)
-		require.NoError(t, err)
+		createActiveSpotClobPair(t, ks, secondPair)
 		first := spotReservationTestOrder(id, 1)
 		second := spotReservationTestOrder(id, 2)
 		second.OrderId.ClobPairId = 8

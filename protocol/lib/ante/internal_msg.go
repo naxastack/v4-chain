@@ -96,6 +96,7 @@ func IsInternalMsg(msg sdk.Msg) bool {
 		*clob.MsgUpdateClobPair,
 		*clob.MsgUpdateEquityTierLimitConfiguration,
 		*clob.MsgUpdateLiquidationsConfig,
+		*clob.MsgUpdateSpotResourceParams,
 
 		// delaymsg
 		*delaymsg.MsgDelayMessage,
@@ -103,6 +104,7 @@ func IsInternalMsg(msg sdk.Msg) bool {
 		// feetiers
 		*feetiers.MsgSetStakingTiers,
 		*feetiers.MsgUpdatePerpetualFeeParams,
+		*feetiers.MsgUpdateSpotFeeParams,
 		*feetiers.MsgSetMarketFeeDiscountParams,
 
 		// govplus

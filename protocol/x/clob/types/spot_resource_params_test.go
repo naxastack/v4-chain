@@ -15,6 +15,16 @@ func TestSpotResourceParamsValidate(t *testing.T) {
 		{MaxSpotStatefulOrdersPerSubaccount: 1, MaxSpotDelistOrdersPerBlock: 0},
 		{MaxSpotStatefulOrdersPerSubaccount: types.MaxSpotResourceLimit + 1, MaxSpotDelistOrdersPerBlock: 1},
 		{MaxSpotStatefulOrdersPerSubaccount: 1, MaxSpotDelistOrdersPerBlock: types.MaxSpotResourceLimit + 1},
+		{
+			MaxSpotStatefulOrdersPerSubaccount: 1,
+			MaxSpotDelistOrdersPerBlock:        1,
+			MaxAssetLifecyclePairsPerBlock:     0,
+		},
+		{
+			MaxSpotStatefulOrdersPerSubaccount: 1,
+			MaxSpotDelistOrdersPerBlock:        1,
+			MaxAssetLifecyclePairsPerBlock:     types.MaxAssetLifecyclePairsPerBlock + 1,
+		},
 	} {
 		require.Error(t, params.Validate())
 	}
@@ -22,5 +32,6 @@ func TestSpotResourceParamsValidate(t *testing.T) {
 	require.NoError(t, (types.SpotResourceParams{
 		MaxSpotStatefulOrdersPerSubaccount: types.MaxSpotResourceLimit,
 		MaxSpotDelistOrdersPerBlock:        types.MaxSpotResourceLimit,
+		MaxAssetLifecyclePairsPerBlock:     types.MaxAssetLifecyclePairsPerBlock,
 	}).Validate())
 }

@@ -59,6 +59,40 @@ func (gs GenesisState) Validate() error {
 		}
 	}
 
+	lifecyclePairIds := make(map[uint32]struct{}, len(gs.SpotPairLifecycles))
+	for _, lifecycle := range gs.SpotPairLifecycles {
+		if _, exists := lifecyclePairIds[lifecycle.ClobPairId]; exists {
+			return fmt.Errorf("duplicated spot pair lifecycle")
+		}
+		lifecyclePairIds[lifecycle.ClobPairId] = struct{}{}
+		if _, exists := clobPairIdMap[lifecycle.ClobPairId]; !exists {
+			return fmt.Errorf("spot pair lifecycle references an unknown clob pair")
+		}
+		if _, exists := spotClobPairs[lifecycle.ClobPairId]; !exists {
+			return fmt.Errorf("spot pair lifecycle must reference a spot CLOB pair")
+		}
+		if lifecycle.PauseSource > SpotPairPauseSource_SPOT_PAIR_PAUSE_SOURCE_MANUAL {
+			return fmt.Errorf("invalid spot pair pause source")
+		}
+	}
+
+	delistPairIds := make(map[uint32]struct{}, len(gs.SpotDelistCursors))
+	for _, cursor := range gs.SpotDelistCursors {
+		if _, exists := delistPairIds[cursor.ClobPairId]; exists {
+			return fmt.Errorf("duplicated spot delist cursor")
+		}
+		delistPairIds[cursor.ClobPairId] = struct{}{}
+		if _, exists := clobPairIdMap[cursor.ClobPairId]; !exists {
+			return fmt.Errorf("spot delist cursor references an unknown clob pair")
+		}
+		if _, exists := spotClobPairs[cursor.ClobPairId]; !exists {
+			return fmt.Errorf("spot delist cursor must reference a spot CLOB pair")
+		}
+		if err := ValidateSpotDelistCursor(cursor); err != nil {
+			return err
+		}
+	}
+
 	if err := gs.BlockRateLimitConfig.Validate(); err != nil {
 		return err
 	}
@@ -75,5 +109,18 @@ func (gs GenesisState) Validate() error {
 		return err
 	}
 
+	return nil
+}
+
+func ValidateSpotDelistCursor(cursor SpotDelistCursor) error {
+	if cursor.NextOrderId == (OrderId{}) {
+		return nil
+	}
+	if err := cursor.NextOrderId.Validate(); err != nil {
+		return fmt.Errorf("spot delist cursor references an illegal order id: %w", err)
+	}
+	if !cursor.NextOrderId.IsLongTermOrder() || cursor.NextOrderId.ClobPairId != cursor.ClobPairId {
+		return fmt.Errorf("spot delist cursor references an illegal order id")
+	}
 	return nil
 }

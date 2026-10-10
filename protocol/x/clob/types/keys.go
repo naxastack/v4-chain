@@ -54,6 +54,19 @@ const (
 	// SpotStatefulOrderCountKeyPrefix stores bounded active-order counts by subaccount.
 	SpotStatefulOrderCountKeyPrefix = "SpotOrderCount:"
 
+	// SpotPairLifecycleStateKeyPrefix stores pause provenance and terminal state by Spot pair.
+	SpotPairLifecycleStateKeyPrefix = "SpotPairLifecycle:"
+
+	// SpotPairsByAssetKeyPrefix indexes Spot CLOB pair ids by each referenced asset.
+	// The full key is prefix + uint32(assetId) + uint32(clobPairId).
+	SpotPairsByAssetKeyPrefix = "SpotPairsByAsset:"
+
+	// SpotDelistCursorKeyPrefix stores the next long-term order to release by Spot pair.
+	SpotDelistCursorKeyPrefix = "SpotDelist:"
+
+	// SpotDelistSchedulerCursorKey stores the next Spot pair id in the delist rotation.
+	SpotDelistSchedulerCursorKey = "SpotDelistScheduler"
+
 	// ClobPairKeyPrefix is the prefix to retrieve all ClobPair
 	ClobPairKeyPrefix = "Clob:"
 

@@ -52,10 +52,9 @@ func TestProcessSpotSingleMatchAtomicSettlement(t *testing.T) {
 					WithdrawalsEnabled: true, SpotTradingEnabled: true,
 				}))
 			}
-			pair := spotReservationTestPair()
-			_, err = ks.ClobKeeper.CreateSpotClobPair(ks.Ctx, pair)
-			require.NoError(t, err)
 			require.NoError(t, ks.FeeTiersKeeper.SetSpotFeeParams(ks.Ctx, assettypesToSpotFeeParams(1_000)))
+			pair := spotReservationTestPair()
+			createActiveSpotClobPair(t, ks, pair)
 
 			buyerId := satypes.SubaccountId{Owner: sampletest.AccAddress(), Number: 1}
 			sellerId := satypes.SubaccountId{Owner: sampletest.AccAddress(), Number: 2}
@@ -173,9 +172,8 @@ func newSpotSettlementFixture(t *testing.T, orderQuantums uint64, buyerBalance i
 			WithdrawalsEnabled: true, SpotTradingEnabled: true,
 		}))
 	}
-	_, err = ks.ClobKeeper.CreateSpotClobPair(ks.Ctx, spotReservationTestPair())
-	require.NoError(t, err)
 	require.NoError(t, ks.FeeTiersKeeper.SetSpotFeeParams(ks.Ctx, assettypesToSpotFeeParams(1_000)))
+	createActiveSpotClobPair(t, ks, spotReservationTestPair())
 	buyerId := satypes.SubaccountId{Owner: sampletest.AccAddress(), Number: 11}
 	sellerId := satypes.SubaccountId{Owner: sampletest.AccAddress(), Number: 12}
 	ks.SubaccountsKeeper.SetSubaccount(ks.Ctx, satypes.Subaccount{

@@ -22,6 +22,39 @@ var SupportedClobPairStatusTransitions = map[ClobPair_Status]map[ClobPair_Status
 	},
 }
 
+// SupportedSpotClobPairStatusTransitions is separate from the perpetual
+// transition table. Spot final settlement is terminal and CANCEL_ONLY is a
+// recoverable trading pause.
+var SupportedSpotClobPairStatusTransitions = map[ClobPair_Status]map[ClobPair_Status]struct{}{
+	ClobPair_STATUS_ACTIVE: {
+		ClobPair_STATUS_CANCEL_ONLY:      {},
+		ClobPair_STATUS_FINAL_SETTLEMENT: {},
+	},
+	ClobPair_STATUS_CANCEL_ONLY: {
+		ClobPair_STATUS_ACTIVE:           {},
+		ClobPair_STATUS_FINAL_SETTLEMENT: {},
+	},
+	ClobPair_STATUS_FINAL_SETTLEMENT: {},
+}
+
+func IsSupportedSpotClobPairStatus(status ClobPair_Status) bool {
+	_, exists := SupportedSpotClobPairStatusTransitions[status]
+	return exists
+}
+
+// IsSupportedSpotClobPairStatusTransition validates the Spot-only lifecycle.
+// Repeating a status is idempotent; FINAL_SETTLEMENT cannot transition out.
+func IsSupportedSpotClobPairStatusTransition(from, to ClobPair_Status) bool {
+	if !IsSupportedSpotClobPairStatus(from) || !IsSupportedSpotClobPairStatus(to) {
+		return false
+	}
+	if from == to {
+		return true
+	}
+	_, exists := SupportedSpotClobPairStatusTransitions[from][to]
+	return exists
+}
+
 // IsSupportedClobPairStatus returns true if the provided ClobPair_Status is in the list
 // of currently supported ClobPair_Status types. Else, returns false.
 func IsSupportedClobPairStatus(clobPairStatus ClobPair_Status) bool {
@@ -80,12 +113,14 @@ func (c *ClobPair) GetClobPairId() ClobPairId {
 
 // Stateless validation on ClobPair.
 func (c *ClobPair) Validate() error {
+	isSpot := false
 	switch metadata := c.Metadata.(type) {
 	case *ClobPair_PerpetualClobMetadata:
 		if metadata.PerpetualClobMetadata == nil {
 			return errorsmod.Wrap(ErrInvalidClobPairParameter, "perpetual CLOB metadata cannot be nil")
 		}
 	case *ClobPair_SpotClobMetadata:
+		isSpot = true
 		if metadata.SpotClobMetadata == nil {
 			return errorsmod.Wrap(ErrInvalidClobPairParameter, "spot CLOB metadata cannot be nil")
 		}
@@ -96,7 +131,11 @@ func (c *ClobPair) Validate() error {
 		return errorsmod.Wrap(ErrInvalidClobPairParameter, "CLOB metadata must be specified")
 	}
 
-	if !IsSupportedClobPairStatus(c.Status) {
+	isSupportedStatus := IsSupportedClobPairStatus(c.Status)
+	if isSpot {
+		isSupportedStatus = IsSupportedSpotClobPairStatus(c.Status)
+	}
+	if !isSupportedStatus {
 		return errorsmod.Wrapf(
 			ErrInvalidClobPairParameter,
 			"CLOB pair (%+v) has unsupported status %+v",

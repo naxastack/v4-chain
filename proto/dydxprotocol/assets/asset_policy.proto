@@ -31,3 +31,34 @@ message AssetPolicy {
   // PerpetualEnabled permits use by existing perpetual asset paths.
   bool perpetual_enabled = 6;
 }
+
+// AssetPolicyState stores the consensus versions for one asset policy.
+// Submitters cannot set these versions on AssetPolicy.
+message AssetPolicyState {
+  // AssetId identifies the asset whose policy versions are stored.
+  uint32 asset_id = 1;
+  // PolicyVersion increments on every successful policy change.
+  uint64 policy_version = 2;
+  // LifecycleVersion increments only when the policy status changes.
+  uint64 lifecycle_version = 3;
+}
+
+// AssetLifecycleTask is the asset-owned schedule for Spot pair transitions.
+message AssetLifecycleTask {
+  // AssetId identifies the asset that owns this task.
+  uint32 asset_id = 1;
+  // TargetLifecycleVersion must match AssetPolicyState.lifecycle_version.
+  uint64 target_lifecycle_version = 2;
+  // TargetStatus is the asset status this task applies to Spot pairs.
+  AssetPolicyStatus target_status = 3;
+  // NextClobPairId is the next Spot pair id for this asset.
+  uint32 next_clob_pair_id = 4;
+  // Completed reports that every referenced Spot pair has been visited.
+  bool completed = 5;
+}
+
+// AssetLifecycleSchedulerCursor is the next asset id to service.
+message AssetLifecycleSchedulerCursor {
+  // NextAssetId is the first asset considered in the next block.
+  uint32 next_asset_id = 1;
+}

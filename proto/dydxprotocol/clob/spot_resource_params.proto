@@ -10,4 +10,7 @@ message SpotResourceParams {
 
   // Maximum spot orders released by the delisting scheduler per block.
   uint32 max_spot_delist_orders_per_block = 2;
+
+  // Maximum Spot pairs advanced by asset lifecycle tasks in one block.
+  uint32 max_asset_lifecycle_pairs_per_block = 3;
 }

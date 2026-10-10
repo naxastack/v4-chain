@@ -81,8 +81,19 @@ func EndBlocker(
 	// Prune expired stateful orders completely from state.
 	expiredStatefulOrderIds := keeper.RemoveExpiredStatefulOrders(ctx, ctx.BlockTime())
 	for _, orderId := range expiredStatefulOrderIds {
-		// Remove the stateful order and release any associated spot reservation.
-		keeper.MustRemoveStatefulOrder(ctx, orderId)
+		// Spot long-term expiry uses the same atomic release as delisting.
+		if orderId.IsLongTermOrder() {
+			if pair, found := keeper.GetClobPair(ctx, types.ClobPairId(orderId.ClobPairId)); found &&
+				pair.GetSpotClobMetadata() != nil {
+				if err := keeper.CancelSpotStatefulOrder(ctx, orderId); err != nil {
+					panic(err)
+				}
+			} else {
+				keeper.MustRemoveStatefulOrder(ctx, orderId)
+			}
+		} else {
+			keeper.MustRemoveStatefulOrder(ctx, orderId)
+		}
 
 		// Emit an on-chain indexer event for Stateful Order Expiration.
 		keeper.GetIndexerEventManager().AddBlockEvent(
@@ -107,6 +118,35 @@ func EndBlocker(
 	// Update the memstore with expired order ids.
 	// These expired stateful order ids will be purged from the memclob in `Commit`.
 	processProposerMatchesEvents.ExpiredStatefulOrderIds = expiredStatefulOrderIds
+
+	// Advance asset lifecycle tasks before TWAP and conditional orders.
+	keeper.AdvanceSpotAssetLifecycleTasks(ctx)
+
+	expiredOrderIds := make(map[types.OrderId]struct{}, len(expiredStatefulOrderIds))
+	for _, orderId := range expiredStatefulOrderIds {
+		expiredOrderIds[orderId] = struct{}{}
+	}
+	for _, orderId := range keeper.AdvanceSpotDelistOrders(ctx) {
+		if _, alreadyExpired := expiredOrderIds[orderId]; alreadyExpired {
+			continue
+		}
+		keeper.GetIndexerEventManager().AddBlockEvent(
+			ctx,
+			indexerevents.SubtypeStatefulOrder,
+			indexer_manager.IndexerTendermintEvent_BLOCK_EVENT_END_BLOCK,
+			indexerevents.StatefulOrderEventVersion,
+			indexer_manager.GetBytes(
+				indexerevents.NewStatefulOrderRemovalEvent(
+					orderId,
+					indexershared.OrderRemovalReason_ORDER_REMOVAL_REASON_FINAL_SETTLEMENT,
+				),
+			),
+		)
+		processProposerMatchesEvents.RemovedStatefulOrderIds = append(
+			processProposerMatchesEvents.RemovedStatefulOrderIds,
+			orderId,
+		)
+	}
 
 	// Place any TWAP suborders that are due
 	keeper.GenerateAndPlaceTriggeredTwapSuborders(ctx)

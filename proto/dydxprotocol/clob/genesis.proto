@@ -6,6 +6,7 @@ import "dydxprotocol/clob/block_rate_limit_config.proto";
 import "dydxprotocol/clob/clob_pair.proto";
 import "dydxprotocol/clob/equity_tier_limit_config.proto";
 import "dydxprotocol/clob/liquidations_config.proto";
+import "dydxprotocol/clob/order.proto";
 import "dydxprotocol/clob/spot_resource_params.proto";
 import "dydxprotocol/clob/stateful_spot_reservation.proto";
 
@@ -24,4 +25,39 @@ message GenesisState {
   // StatefulSpotReservations contains all active spot long-term reservations.
   repeated StatefulSpotReservation stateful_spot_reservations = 6
       [ (gogoproto.nullable) = false ];
+  // SpotPairLifecycles contains pause provenance for Spot CLOB pairs.
+  // The consensus store keeps a separate two-byte encoding.
+  repeated SpotPairLifecycle spot_pair_lifecycles = 7
+      [ (gogoproto.nullable) = false ];
+  // SpotDelistCursors resumes long-term order cleanup for final settlement.
+  repeated SpotDelistCursor spot_delist_cursors = 8
+      [ (gogoproto.nullable) = false ];
+  // SpotDelistSchedulerCursor is the next Spot pair considered for delisting.
+  SpotDelistSchedulerCursor spot_delist_scheduler_cursor = 9
+      [ (gogoproto.nullable) = false ];
 }
+
+// SpotPairPauseSource is the genesis encoding of why a Spot market is paused.
+// Numeric values match the consensus store encoding.
+enum SpotPairPauseSource {
+  SPOT_PAIR_PAUSE_SOURCE_NONE = 0;
+  SPOT_PAIR_PAUSE_SOURCE_AUTO = 1;
+  SPOT_PAIR_PAUSE_SOURCE_MANUAL = 2;
+}
+
+// SpotPairLifecycle is the genesis record for one Spot CLOB pair.
+message SpotPairLifecycle {
+  uint32 clob_pair_id = 1;
+  SpotPairPauseSource pause_source = 2;
+  bool final_settlement_started = 3;
+}
+
+// SpotDelistCursor is the next long-term order to release for one Spot pair.
+message SpotDelistCursor {
+  uint32 clob_pair_id = 1;
+  OrderId next_order_id = 2 [ (gogoproto.nullable) = false ];
+  bool completed = 3;
+}
+
+// SpotDelistSchedulerCursor selects the next Spot pair in the delist rotation.
+message SpotDelistSchedulerCursor { uint32 next_clob_pair_id = 1; }

@@ -21,7 +21,18 @@
         "spot_trading_enabled": true,
         "perpetual_enabled": true
       }
-    ]
+    ],
+    "asset_policy_states": [
+      {
+        "asset_id": 0,
+        "policy_version": "1",
+        "lifecycle_version": "1"
+      }
+    ],
+    "asset_lifecycle_tasks": [],
+    "asset_lifecycle_scheduler_cursor": {
+      "next_asset_id": 0
+    }
   },
   "affiliates": {
     "affiliate_tiers": {
@@ -145,7 +156,14 @@
     },
     "spot_resource_params": {
       "max_spot_stateful_orders_per_subaccount": 100,
-      "max_spot_delist_orders_per_block": 100
+      "max_spot_delist_orders_per_block": 100,
+      "max_asset_lifecycle_pairs_per_block": 10
+    },
+    "stateful_spot_reservations": [],
+    "spot_pair_lifecycles": [],
+    "spot_delist_cursors": [],
+    "spot_delist_scheduler_cursor": {
+      "next_clob_pair_id": 0
     }
   },
   "consensus": null,
@@ -535,6 +553,7 @@
   },
   "subaccounts": {
     "business_number_cursors": [],
+    "spot_order_epochs": [],
     "subaccounts": [],
     "typed_subaccounts": []
   },
